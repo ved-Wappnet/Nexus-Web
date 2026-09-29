@@ -1,0 +1,635 @@
+<div class="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:py-14">
+  <div class="pointer-events-none absolute inset-0">
+    <div
+      class="absolute -top-28 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-indigo-600/25 blur-3xl transition-opacity duration-500"
+      [class.opacity-100]="view() === 'signin' || view() === 'forgot' || view() === 'reset'"
+      [class.opacity-40]="view() === 'signup'"></div>
+    <div
+      class="absolute -bottom-16 right-0 h-96 w-96 rounded-full bg-cyan-700/15 blur-3xl transition-opacity duration-500"
+      [class.opacity-30]="view() !== 'signup'" [class.opacity-100]="view() === 'signup'"></div>
+    <div
+      class="absolute top-1/3 -left-20 h-64 w-64 rounded-full bg-violet-600/10 blur-3xl transition-opacity duration-500"
+      [class.opacity-0]="view() !== 'signup'" [class.opacity-100]="view() === 'signup'"></div>
+  </div>
+
+  @if (view() === 'signin') {
+  <div class="auth-panel relative w-full max-w-md">
+    <div class="mb-8 text-center">
+      <a routerLink="/" class="inline-block group cursor-pointer">
+        <img src="/brand/nexus-logo-256.png" alt="Nexus Market" width="64" height="64"
+          class="mx-auto mb-4 h-16 w-16 rounded-2xl shadow-lg shadow-indigo-500/25 ring-1 ring-white/10 group-hover:scale-105 transition" />
+        <h1 class="text-2xl font-semibold tracking-tight text-zinc-100 group-hover:text-indigo-300 transition">Nexus Market</h1>
+      </a>
+      <p class="mt-1 text-sm text-zinc-400">Sign in to your workspace</p>
+    </div>
+
+    <div
+      class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-6 shadow-2xl shadow-black/50 backdrop-blur-md sm:p-7">
+      @if (error()) {
+      <p class="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+        {{ error() }}
+      </p>
+      }
+
+      <form class="space-y-4" [formGroup]="signInForm" (ngSubmit)="submitSignIn()" novalidate>
+        <div>
+          <label class="block text-sm" for="signin-email">
+            <span class="mb-1.5 block text-zinc-400">Email</span>
+            <input id="signin-email"
+              class="auth-field-focus w-full rounded-xl border bg-zinc-950 px-3 py-2.5 text-zinc-100 outline-none ring-indigo-500/40 focus:ring-2"
+              [class.border-zinc-800]="!isInvalid(signInForm.controls.email)"
+              [class.border-rose-500/60]="isInvalid(signInForm.controls.email)" type="email" formControlName="email"
+              autocomplete="username" />
+          </label>
+          @if (fieldError(signInForm.controls.email, 'Email'); as msg) {
+          <p class="mt-1.5 text-xs text-rose-400">{{ msg }}</p>
+          }
+        </div>
+
+        <div>
+          <label class="block text-sm" for="signin-password">
+            <span class="mb-1.5 block text-zinc-400">Password</span>
+            <div class="relative">
+              <input id="signin-password"
+                class="auth-field-focus w-full rounded-xl border bg-zinc-950 py-2.5 pl-3 pr-11 text-zinc-100 outline-none ring-indigo-500/40 focus:ring-2"
+                [class.border-zinc-800]="!isInvalid(signInForm.controls.password)"
+                [class.border-rose-500/60]="isInvalid(signInForm.controls.password)"
+                [type]="showSignInPassword() ? 'text' : 'password'" formControlName="password"
+                autocomplete="current-password" />
+              <button type="button"
+                class="absolute inset-y-0 right-0 flex items-center px-3 text-zinc-500 transition hover:text-zinc-200"
+                (click)="toggleSignInPassword()"
+                [attr.aria-label]="showSignInPassword() ? 'Hide password' : 'Show password'">
+                @if (showSignInPassword()) {
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                  aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                </svg>
+                } @else {
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                  aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+                }
+              </button>
+            </div>
+          </label>
+          @if (fieldError(signInForm.controls.password, 'Password'); as msg) {
+          <p class="mt-1.5 text-xs text-rose-400">{{ msg }}</p>
+          }
+          <div class="mt-2 flex justify-end">
+            <button type="button" class="text-sm text-indigo-400 transition hover:text-indigo-300"
+              (click)="openForgot()">
+              Forgot password?
+            </button>
+          </div>
+        </div>
+
+        <button
+          class="w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+          type="submit" [disabled]="loading()">
+          {{ loading() ? 'Signing in…' : 'Enter workspace' }}
+        </button>
+      </form>
+    </div>
+
+    <p class="mt-6 text-center text-sm text-zinc-400">
+      New to Nexus?
+      <button type="button" class="ml-1 font-medium text-indigo-400 transition hover:text-indigo-300"
+        (click)="setView('signup')">
+        Create an account
+      </button>
+    </p>
+  </div>
+  }
+
+  @if (view() === 'signup') {
+  <div class="auth-panel relative w-full max-w-4xl">
+    <div
+      class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/70 shadow-2xl shadow-black/50 backdrop-blur-md">
+      <div class="grid lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)]">
+        <aside class="auth-panel-delay border-b border-zinc-800 bg-zinc-950/80 p-6 sm:p-8 lg:border-b-0 lg:border-r">
+          <a routerLink="/" class="mb-8 flex items-center gap-3 group cursor-pointer">
+            <img src="/brand/nexus-icon-64.png" alt="Nexus Market" width="40" height="40"
+              class="h-10 w-10 rounded-xl shadow-md shadow-indigo-500/20 ring-1 ring-white/10 group-hover:scale-105 transition" />
+            <div>
+              <p class="text-sm font-semibold text-zinc-100 group-hover:text-indigo-300 transition">Nexus Market</p>
+              <p class="text-xs text-zinc-500">Create your account</p>
+            </div>
+          </a>
+
+          <h2 class="text-xl font-semibold tracking-tight text-zinc-100 sm:text-2xl">How will you use Nexus?</h2>
+          <p class="mt-2 text-sm leading-relaxed text-zinc-400">
+            Pick a path once. You can always sign in the same way later.
+          </p>
+
+          <div class="mt-8 space-y-3" role="radiogroup" aria-label="Account type">
+            @for (option of accountTypeOptions; track option.value) {
+            <button type="button" role="radio" class="auth-role-card w-full rounded-xl border px-4 py-3.5 text-left"
+              [class.is-selected]="signUpForm.controls.accountType.value === option.value"
+              [class.border-indigo-500]="signUpForm.controls.accountType.value === option.value"
+              [class.bg-indigo-500/10]="signUpForm.controls.accountType.value === option.value"
+              [class.border-zinc-800]="signUpForm.controls.accountType.value !== option.value"
+              [class.bg-zinc-900/40]="signUpForm.controls.accountType.value !== option.value"
+              [attr.aria-checked]="signUpForm.controls.accountType.value === option.value"
+              (click)="selectAccountType(option.value)">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm font-semibold"
+                    [class.text-zinc-100]="signUpForm.controls.accountType.value === option.value"
+                    [class.text-zinc-300]="signUpForm.controls.accountType.value !== option.value">
+                    {{ option.label }}
+                  </p>
+                  <p class="mt-1 text-xs leading-relaxed text-zinc-500">{{ option.description }}</p>
+                </div>
+                <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border"
+                  [class.border-indigo-400]="signUpForm.controls.accountType.value === option.value"
+                  [class.bg-indigo-500]="signUpForm.controls.accountType.value === option.value"
+                  [class.border-zinc-600]="signUpForm.controls.accountType.value !== option.value">
+                  @if (signUpForm.controls.accountType.value === option.value) {
+                  <span class="h-1.5 w-1.5 rounded-full bg-white"></span>
+                  }
+                </span>
+              </div>
+            </button>
+            }
+          </div>
+
+          @if (signUpForm.controls.accountType.value === AccountTypes.VENDOR) {
+          <p class="mt-5 text-xs leading-relaxed text-cyan-300/90">
+            Vendor accounts start as SUPPLIER. New SKUs require sub-admin approval.
+          </p>
+          }
+          @if (signUpForm.controls.accountType.value === AccountTypes.DELIVERY_PARTNER) {
+          <div class="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs leading-relaxed text-amber-200">
+            <span class="font-bold text-amber-300">🚚 Fleet KYC Required</span>: Delivery Partners require document submission (Driving License, Vehicle RC) & Admin Approval before order dispatch.
+          </div>
+          }
+        </aside>
+
+        <div class="p-6 sm:p-8">
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-zinc-100">Your details</h3>
+            <p class="mt-1 text-sm text-zinc-400">We’ll use these to set up your workspace.</p>
+          </div>
+
+          @if (error()) {
+          <p class="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+            {{ error() }}
+          </p>
+          }
+
+          <form class="space-y-4" [formGroup]="signUpForm" (ngSubmit)="submitSignUp()" novalidate>
+            <div>
+              <label class="block text-sm" for="signup-name">
+                <span class="mb-1.5 block text-zinc-400">Name</span>
+                <input id="signup-name"
+                  class="auth-field-focus w-full rounded-xl border bg-zinc-950 px-3 py-2.5 text-zinc-100 outline-none ring-indigo-500/40 focus:ring-2"
+                  [class.border-zinc-800]="!isInvalid(signUpForm.controls.name)"
+                  [class.border-rose-500/60]="isInvalid(signUpForm.controls.name)" type="text" formControlName="name"
+                  autocomplete="name" />
+              </label>
+              @if (fieldError(signUpForm.controls.name, 'Name'); as msg) {
+              <p class="mt-1.5 text-xs text-rose-400">{{ msg }}</p>
+              }
+            </div>
+
+            <div>
+              <label class="block text-sm" for="signup-email">
+                <span class="mb-1.5 block text-zinc-400">Email</span>
+                <input id="signup-email"
+                  class="auth-field-focus w-full rounded-xl border bg-zinc-950 px-3 py-2.5 text-zinc-100 outline-none ring-indigo-500/40 focus:ring-2"
+                  [class.border-zinc-800]="!isInvalid(signUpForm.controls.email)"
+                  [class.border-rose-500/60]="isInvalid(signUpForm.controls.email)" type="email" formControlName="email"
+                  autocomplete="email" />
+              </label>
+              @if (fieldError(signUpForm.controls.email, 'Email'); as msg) {
+              <p class="mt-1.5 text-xs text-rose-400">{{ msg }}</p>
+              }
+            </div>
+
+            <div>
+              <label class="block text-sm" for="signup-password">
+                <span class="mb-1.5 block text-zinc-400">Password</span>
+                <div class="relative">
+                  <input id="signup-password"
+                    class="auth-field-focus w-full rounded-xl border bg-zinc-950 py-2.5 pl-3 pr-11 text-zinc-100 outline-none ring-indigo-500/40 focus:ring-2"
+                    [class.border-zinc-800]="!isInvalid(signUpForm.controls.password)"
+                    [class.border-rose-500/60]="isInvalid(signUpForm.controls.password)"
+                    [type]="showSignUpPassword() ? 'text' : 'password'" formControlName="password"
+                    autocomplete="new-password" />
+                  <button type="button"
+                    class="absolute inset-y-0 right-0 flex items-center px-3 text-zinc-500 transition hover:text-zinc-200"
+                    (click)="toggleSignUpPassword()"
+                    [attr.aria-label]="showSignUpPassword() ? 'Hide password' : 'Show password'">
+                    @if (showSignUpPassword()) {
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                      aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    </svg>
+                    } @else {
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                      aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                    }
+                  </button>
+                </div>
+              </label>
+              @if (fieldError(signUpForm.controls.password, 'Password'); as msg) {
+              <p class="mt-1.5 text-xs text-rose-400">{{ msg }}</p>
+              }
+            </div>
+
+            @if (signUpForm.controls.accountType.value === AccountTypes.DELIVERY_PARTNER) {
+            <div class="space-y-4 rounded-2xl border border-indigo-500/25 bg-gradient-to-b from-indigo-950/30 to-zinc-950/60 p-4 sm:p-5 backdrop-blur-md">
+              <!-- Header Bar -->
+              <div class="flex items-center justify-between border-b border-indigo-500/20 pb-3">
+                <div class="flex items-center gap-2.5">
+                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span class="text-sm font-semibold text-zinc-100 block">Fleet & Territory Coverage</span>
+                    <p class="text-[11px] text-zinc-400">Configured operational parameters for automated dispatch</p>
+                  </div>
+                </div>
+                <span class="inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/15 px-2.5 py-1 text-[11px] font-semibold text-indigo-300">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Auto-Preselected
+                </span>
+              </div>
+
+              <!-- International Phone Number Input with app-select -->
+              <div>
+                <label class="block text-xs font-medium text-zinc-300 mb-1.5" for="signup-mobile">
+                  Mobile Phone Number <span class="text-indigo-400">*</span>
+                </label>
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                  <!-- Country Code Select using app-select -->
+                  <div class="sm:col-span-5">
+                    <app-select
+                      [options]="phoneCountryOptions()"
+                      formControlName="countryCode"
+                      placeholder="Country"
+                      (valueChange)="onPhoneCountryChange($event)"
+                    />
+                  </div>
+
+                  <!-- Mobile Number Input -->
+                  <div class="sm:col-span-7">
+                    <div class="relative flex items-center">
+                      <input
+                        id="signup-mobile"
+                        class="h-10 w-full rounded-xl border bg-zinc-950 px-3.5 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none font-mono transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/40"
+                        [class.border-zinc-800]="!isInvalid(signUpForm.controls.mobileNumber) && !isMobileValid()"
+                        [class.border-rose-500/60]="isInvalid(signUpForm.controls.mobileNumber)"
+                        [class.border-emerald-500/60]="isMobileValid()"
+                        type="tel"
+                        formControlName="mobileNumber"
+                        [placeholder]="phoneCountry().phonePlaceholder"
+                        (input)="onMobileNumberInput($event)"
+                      />
+                      @if (isMobileValid()) {
+                        <div class="absolute right-3 text-emerald-400 animate-fadeIn">
+                          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                          </svg>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Helper & Real-Time Mask Status Bar -->
+                <div class="mt-2 flex flex-wrap items-center justify-between gap-1.5 text-xs">
+                  @if (isMobileValid()) {
+                    <span class="inline-flex items-center gap-1.5 font-medium text-emerald-400">
+                      <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                      Valid {{ phoneCountry().name }} mobile number
+                    </span>
+                  } @else if (mobileDigitsCount() > 0) {
+                    <span class="inline-flex items-center gap-1.5 font-medium text-amber-400">
+                      <span class="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping"></span>
+                      {{ mobileDigitsCount() }} / {{ phoneCountry().phoneDigitCount }} digits (Mask: {{ phoneCountry().phoneMask }})
+                    </span>
+                  } @else {
+                    <span class="text-zinc-500">
+                      Format: {{ phoneCountry().phoneMask }} ({{ phoneCountry().phoneDigitCount }} digits)
+                    </span>
+                  }
+
+                  @if (signUpForm.controls.mobileNumber.value) {
+                    <span class="inline-flex items-center gap-1 rounded-md border border-zinc-800 bg-zinc-900/90 px-2 py-0.5 font-mono text-[11px] text-zinc-300">
+                      <span class="text-zinc-500">E.164:</span>
+                      <span class="text-indigo-400 font-semibold">{{ signUpForm.controls.phoneDialCode.value }} {{ signUpForm.controls.mobileNumber.value }}</span>
+                    </span>
+                  }
+                </div>
+
+                @if (phoneErrorMessage(); as errMsg) {
+                  <p class="mt-1 text-xs text-rose-400 animate-fadeIn">{{ errMsg }}</p>
+                }
+              </div>
+
+              <!-- Vehicle Fleet Configuration with app-select -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-zinc-300 mb-1.5">
+                    Vehicle Type
+                  </label>
+                  <app-select
+                    [options]="vehicleTypeOptions"
+                    formControlName="vehicleType"
+                    placeholder="Select Vehicle Type"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-zinc-300 mb-1.5" for="signup-plate">
+                    Vehicle License Plate
+                  </label>
+                  <input
+                    id="signup-plate"
+                    class="h-10 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 text-xs sm:text-sm text-zinc-100 uppercase font-mono placeholder:text-zinc-600 outline-none transition hover:border-zinc-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/40"
+                    type="text"
+                    formControlName="vehiclePlateNumber"
+                    placeholder="e.g. DL-04-NX-2026"
+                  />
+                </div>
+              </div>
+
+              <!-- Cascading Territorial Selects with app-select (Clean 2-Column Grid) -->
+              <div class="space-y-3 pt-1">
+                <div class="flex items-center justify-between text-xs text-zinc-400">
+                  <span class="font-medium text-zinc-300 flex items-center gap-1.5">
+                    <span class="flex h-2 w-2 rounded-full bg-indigo-500"></span>
+                    Operational Territory (Cascading Hierarchy)
+                  </span>
+                  <span class="text-[11px] text-zinc-500">Auto-filters next levels</span>
+                </div>
+
+                <!-- 2-Column Grid for Country & State -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <!-- Country Select using app-select -->
+                  <div>
+                    <label class="block text-xs text-zinc-400 mb-1.5">
+                      1. Country <span class="text-indigo-400">*</span>
+                    </label>
+                    <app-select
+                      [options]="countrySelectOptions()"
+                      formControlName="country"
+                      placeholder="Select Country"
+                      (valueChange)="onCountryChange($event)"
+                    />
+                  </div>
+
+                  <!-- Region / State Select using app-select -->
+                  <div>
+                    <label class="block text-xs text-zinc-400 mb-1.5">
+                      2. State / Region <span class="text-indigo-400">*</span>
+                    </label>
+                    <app-select
+                      [options]="regionSelectOptions()"
+                      formControlName="regionState"
+                      placeholder="Select State/Region"
+                      (valueChange)="onRegionChange($event)"
+                    />
+                  </div>
+                </div>
+
+                <!-- 2-Column Grid for City & Postal Codes -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <!-- City Select using app-select -->
+                  <div>
+                    <label class="block text-xs text-zinc-400 mb-1.5">
+                      3. City <span class="text-indigo-400">*</span>
+                    </label>
+                    <app-select
+                      [options]="citySelectOptions()"
+                      formControlName="city"
+                      placeholder="Select City"
+                      (valueChange)="onCityChange($event)"
+                    />
+                  </div>
+
+                  <!-- Service Postal Codes -->
+                  <div>
+                    <label class="block text-xs text-zinc-400 mb-1.5" for="signup-postal">
+                      4. Postal / Zip Codes <span class="text-indigo-400">*</span>
+                    </label>
+                    <input
+                      id="signup-postal"
+                      class="h-10 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 text-xs sm:text-sm font-mono text-zinc-100 outline-none transition hover:border-zinc-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/40"
+                      type="text"
+                      formControlName="servicePostalCodes"
+                      (input)="onPostalCodeInput($event)"
+                      placeholder="e.g. 94102, 94103, 94107"
+                    />
+                  </div>
+                </div>
+
+
+                <!-- Active Coverage Zones Pill Strip -->
+                @if (postalCodeChips().length > 0) {
+                  <div class="rounded-xl border border-indigo-500/20 bg-indigo-950/25 p-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-indigo-300">
+                        <svg class="h-3.5 w-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Covered Operational Zones ({{ postalCodeChips().length }})
+                      </span>
+                      <span class="text-[10px] text-zinc-400">Auto-filled from {{ selectedCity().name }}</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      @for (zip of postalCodeChips(); track zip) {
+                        <span class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-400/20 bg-zinc-900/90 px-2.5 py-1 font-mono text-xs font-semibold text-zinc-200 shadow-sm transition hover:border-indigo-400/40">
+                          <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                          {{ zip }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+            }
+
+            <button
+              class="mt-2 w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+              type="submit" [disabled]="loading()">
+              {{ loading() ? 'Creating…' : 'Create account' }}
+            </button>
+          </form>
+
+          <p class="mt-6 text-center text-sm text-zinc-400">
+            Already have an account?
+            <button type="button" class="ml-1 font-medium text-indigo-400 transition hover:text-indigo-300"
+              (click)="setView('signin')">
+              Sign in
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  @if (view() === 'forgot') {
+  <div class="auth-panel relative w-full max-w-md">
+    <div class="mb-8 text-center">
+      <a routerLink="/" class="inline-block group cursor-pointer">
+        <img src="/brand/nexus-logo-256.png" alt="Nexus Market" width="64" height="64"
+          class="mx-auto mb-4 h-16 w-16 rounded-2xl shadow-lg shadow-indigo-500/25 ring-1 ring-white/10 group-hover:scale-105 transition" />
+        <h1 class="text-2xl font-semibold tracking-tight text-zinc-100 group-hover:text-indigo-300 transition">Reset password</h1>
+      </a>
+      <p class="mt-1 text-sm text-zinc-400">We’ll email you a 6-digit verification code</p>
+    </div>
+
+    <div
+      class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-6 shadow-2xl shadow-black/50 backdrop-blur-md sm:p-7">
+      @if (error()) {
+      <p class="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+        {{ error() }}
+      </p>
+      }
+
+      <form class="space-y-4" [formGroup]="forgotForm" (ngSubmit)="submitForgot()" novalidate>
+        <div>
+          <label class="block text-sm" for="forgot-email">
+            <span class="mb-1.5 block text-zinc-400">Email</span>
+            <input id="forgot-email"
+              class="auth-field-focus w-full rounded-xl border bg-zinc-950 px-3 py-2.5 text-zinc-100 outline-none ring-indigo-500/40 focus:ring-2"
+              [class.border-zinc-800]="!isInvalid(forgotForm.controls.email)"
+              [class.border-rose-500/60]="isInvalid(forgotForm.controls.email)" type="email" formControlName="email"
+              autocomplete="email" />
+          </label>
+          @if (fieldError(forgotForm.controls.email, 'Email'); as msg) {
+          <p class="mt-1.5 text-xs text-rose-400">{{ msg }}</p>
+          }
+        </div>
+
+        <button
+          class="w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+          type="submit" [disabled]="loading()">
+          {{ loading() ? 'Sending…' : 'Send verification code' }}
+        </button>
+      </form>
+    </div>
+
+    <p class="mt-6 text-center text-sm text-zinc-400">
+      <button type="button" class="font-medium text-indigo-400 transition hover:text-indigo-300"
+        (click)="setView('signin')">
+        Back to sign in
+      </button>
+    </p>
+  </div>
+  }
+
+  @if (view() === 'reset') {
+  <div class="auth-panel relative w-full max-w-md">
+    <div class="mb-8 text-center">
+      <a routerLink="/" class="inline-block group cursor-pointer">
+        <img src="/brand/nexus-logo-256.png" alt="Nexus Market" width="64" height="64"
+          class="mx-auto mb-4 h-16 w-16 rounded-2xl shadow-lg shadow-indigo-500/25 ring-1 ring-white/10 group-hover:scale-105 transition" />
+        <h1 class="text-2xl font-semibold tracking-tight text-zinc-100 group-hover:text-indigo-300 transition">Enter verification code</h1>
+      </a>
+      <p class="mt-1 text-sm text-zinc-400">
+        Code sent to <span class="text-zinc-200">{{ resetEmail() }}</span>
+      </p>
+    </div>
+
+    <div
+      class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-6 shadow-2xl shadow-black/50 backdrop-blur-md sm:p-7">
+      @if (error()) {
+      <p class="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+        {{ error() }}
+      </p>
+      }
+
+      <form class="space-y-4" [formGroup]="resetForm" (ngSubmit)="submitReset()" novalidate>
+        <div>
+          <label class="block text-sm" for="reset-otp">
+            <span class="mb-1.5 block text-zinc-400">Verification code</span>
+            <input id="reset-otp"
+              class="auth-field-focus w-full rounded-xl border bg-zinc-950 px-3 py-2.5 text-center text-lg tracking-[0.35em] text-zinc-100 outline-none ring-indigo-500/40 focus:ring-2"
+              [class.border-zinc-800]="!isInvalid(resetForm.controls.otp)"
+              [class.border-rose-500/60]="isInvalid(resetForm.controls.otp)" type="text" inputmode="numeric"
+              maxlength="6" autocomplete="one-time-code" formControlName="otp" placeholder="000000" />
+          </label>
+          @if (fieldError(resetForm.controls.otp, 'Verification code'); as msg) {
+          <p class="mt-1.5 text-xs text-rose-400">{{ msg }}</p>
+          }
+        </div>
+
+        <div>
+          <label class="block text-sm" for="reset-password">
+            <span class="mb-1.5 block text-zinc-400">New password</span>
+            <div class="relative">
+              <input id="reset-password"
+                class="auth-field-focus w-full rounded-xl border bg-zinc-950 py-2.5 pl-3 pr-11 text-zinc-100 outline-none ring-indigo-500/40 focus:ring-2"
+                [class.border-zinc-800]="!isInvalid(resetForm.controls.password)"
+                [class.border-rose-500/60]="isInvalid(resetForm.controls.password)"
+                [type]="showResetPassword() ? 'text' : 'password'" formControlName="password"
+                autocomplete="new-password" />
+              <button type="button"
+                class="absolute inset-y-0 right-0 flex items-center px-3 text-zinc-500 transition hover:text-zinc-200"
+                (click)="toggleResetPassword()"
+                [attr.aria-label]="showResetPassword() ? 'Hide password' : 'Show password'">
+                @if (showResetPassword()) {
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                  aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                </svg>
+                } @else {
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                  aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+                }
+              </button>
+            </div>
+          </label>
+          @if (fieldError(resetForm.controls.password, 'Password'); as msg) {
+          <p class="mt-1.5 text-xs text-rose-400">{{ msg }}</p>
+          }
+        </div>
+
+        <button
+          class="w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+          type="submit" [disabled]="loading()">
+          {{ loading() ? 'Updating…' : 'Update password' }}
+        </button>
+      </form>
+
+      <p class="mt-4 text-center text-sm text-zinc-500">
+        Didn’t get a code?
+        <button type="button" class="font-medium text-indigo-400 transition hover:text-indigo-300" (click)="resendOtp()"
+          [disabled]="loading()">
+          Resend code
+        </button>
+      </p>
+    </div>
+
+    <p class="mt-6 text-center text-sm text-zinc-400">
+      <button type="button" class="font-medium text-indigo-400 transition hover:text-indigo-300"
+        (click)="setView('signin')">
+        Back to sign in
+      </button>
+    </p>
+  </div>
+  }
+</div>

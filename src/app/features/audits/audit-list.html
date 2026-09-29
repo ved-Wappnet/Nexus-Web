@@ -1,0 +1,414 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-indigo-400">
+        <svg lucideHistory class="h-4 w-4"></svg>
+        <span>Governance & Security</span>
+      </div>
+      <h1 class="mt-1 text-2xl font-bold tracking-tight text-zinc-100 sm:text-3xl">System Audit Logs</h1>
+      <p class="text-xs text-zinc-400 sm:text-sm mt-0.5">
+        Immutable record of administrative mutations, security events, and business transactions across Nexus.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+      <!-- Export CSV Button -->
+      <button
+        type="button"
+        (click)="downloadCsv()"
+        [disabled]="isExporting()"
+        class="inline-flex items-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-600/20 px-3.5 py-2 text-xs font-semibold text-indigo-300 hover:bg-indigo-600/30 hover:border-indigo-400 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-indigo-950/30"
+        title="Download audit logs as CSV"
+      >
+        <svg
+          lucideDownload
+          class="h-3.5 w-3.5"
+          [class.animate-bounce]="isExporting()"
+        ></svg>
+        <span>{{ isExporting() ? 'Exporting...' : 'Export CSV' }}</span>
+      </button>
+
+      <!-- Refresh Button -->
+      <button
+        type="button"
+        (click)="refresh()"
+        class="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/80 px-3.5 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer shadow-md"
+      >
+        <svg lucideRefreshCw class="h-3.5 w-3.5" [class.animate-spin]="loading()"></svg>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Stats Summary Section -->
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+    <app-stat-card
+      label="Total Recorded Events"
+      [value]="(stats()?.totalLogs ?? totalItems()).toLocaleString()"
+      hint="Platform lifetime events"
+    />
+    <app-stat-card
+      label="24h Activity Velocity"
+      [value]="(stats()?.logs24h ?? 0).toLocaleString()"
+      hint="Events past 24 hours"
+    />
+    <app-stat-card
+      label="Unique Actors Tracked"
+      [value]="(stats()?.uniqueActors ?? 0).toLocaleString()"
+      hint="Admins, suppliers, buyers"
+    />
+    <app-stat-card
+      label="Monitored Entities"
+      [value]="(stats()?.entityBreakdown?.length ?? 6).toString()"
+      hint="Orders, products, auth, RFQ"
+    />
+  </div>
+
+  <!-- Filters & Controls Bar -->
+  <div class="space-y-3 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 p-4 backdrop-blur-md shadow-lg">
+    <!-- Top Row: Search & Entity Category Pills -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <!-- Search Input -->
+      <div class="relative min-w-[260px] flex-1">
+        <svg lucideSearch class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"></svg>
+        <input
+          type="text"
+          [value]="searchQuery()"
+          (input)="onSearchInput($event)"
+          placeholder="Search action, actor email, or entity ID..."
+          class="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 pl-10 pr-4 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+        />
+      </div>
+
+      <!-- Entity Filter Pills -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+        @for (opt of entityOptions; track opt.value) {
+          <button
+            type="button"
+            (click)="selectEntity(opt.value)"
+            class="rounded-xl border px-3 py-1.5 text-xs font-medium transition cursor-pointer shrink-0"
+            [class]="selectedEntity() === opt.value ? 'border-indigo-500 bg-indigo-600/20 text-indigo-300 font-semibold' : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'"
+          >
+            {{ opt.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Bottom Row: Action Filter, Date Range Picker & Clear Filters -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-zinc-800/60 text-xs">
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Action Type Dropdown -->
+        <div class="flex items-center gap-1.5">
+          <label for="audit-action-select" class="text-zinc-400 font-medium whitespace-nowrap">Action:</label>
+          <select
+            id="audit-action-select"
+            [value]="selectedAction()"
+            (change)="selectAction($event)"
+            class="rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-1.5 text-xs text-zinc-200 focus:border-indigo-500 focus:outline-none cursor-pointer"
+          >
+            @for (action of actionOptions; track action.value) {
+              <option [value]="action.value">{{ action.label }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Date Range: From -->
+        <div class="flex items-center gap-1.5">
+          <label for="audit-start-date" class="text-zinc-400 font-medium whitespace-nowrap">From:</label>
+          <input
+            id="audit-start-date"
+            type="date"
+            [value]="startDate()"
+            (change)="onStartDateChange($event)"
+            class="rounded-xl border border-zinc-800 bg-zinc-950/80 px-2.5 py-1 text-xs text-zinc-200 focus:border-indigo-500 focus:outline-none cursor-pointer"
+          />
+        </div>
+
+        <!-- Date Range: To -->
+        <div class="flex items-center gap-1.5">
+          <label for="audit-end-date" class="text-zinc-400 font-medium whitespace-nowrap">To:</label>
+          <input
+            id="audit-end-date"
+            type="date"
+            [value]="endDate()"
+            (change)="onEndDateChange($event)"
+            class="rounded-xl border border-zinc-800 bg-zinc-950/80 px-2.5 py-1 text-xs text-zinc-200 focus:border-indigo-500 focus:outline-none cursor-pointer"
+          />
+        </div>
+      </div>
+
+      <!-- Clear Filters (Conditional) -->
+      @if (hasActiveFilters()) {
+        <button
+          type="button"
+          (click)="clearFilters()"
+          class="inline-flex items-center gap-1 rounded-lg border border-zinc-700/60 bg-zinc-800/80 px-2.5 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white transition cursor-pointer"
+        >
+          <svg lucideX class="h-3 w-3"></svg>
+          <span>Clear Filters</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Audit Table Section -->
+  <div class="rounded-2xl border border-zinc-800/80 bg-zinc-900/60 backdrop-blur-md overflow-hidden shadow-xl">
+    @if (loading()) {
+      <div class="p-12">
+        <app-loader variant="dashboard" />
+      </div>
+    } @else if (logs().length === 0) {
+      <div class="p-12">
+        <app-empty-state
+          title="No audit logs found"
+          detail="No activity records match your current search query, date interval, or action filter."
+        />
+      </div>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-zinc-300">
+          <thead class="bg-zinc-950/70 text-[11px] uppercase tracking-wider text-zinc-400 border-b border-zinc-800/80">
+            <tr>
+              <th class="py-3.5 px-4 font-semibold">Action</th>
+              <th class="py-3.5 px-4 font-semibold">Actor / User</th>
+              <th class="py-3.5 px-4 font-semibold">Target Entity</th>
+              <th class="py-3.5 px-4 font-semibold">Entity ID</th>
+              <th class="py-3.5 px-4 font-semibold">Metadata</th>
+              <th class="py-3.5 px-4 font-semibold text-right">Timestamp</th>
+              <th class="py-3.5 px-4 font-semibold text-center">Inspect</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800/60">
+            @for (log of logs(); track log.id) {
+              <tr
+                class="hover:bg-zinc-800/30 transition-colors cursor-pointer"
+                (click)="openDetail(log)"
+              >
+                <!-- Action Badge (Formatted with labelFormat pipe) -->
+                <td class="py-3.5 px-4 whitespace-nowrap">
+                  <app-badge [tone]="actionTone(log.action)">
+                    {{ log.action | labelFormat }}
+                  </app-badge>
+                </td>
+
+                <!-- Actor Email -->
+                <td class="py-3.5 px-4 whitespace-nowrap font-medium text-zinc-200">
+                  <div class="flex items-center gap-1.5">
+                    <svg lucideUser class="h-3.5 w-3.5 text-zinc-500"></svg>
+                    <span>{{ log.actorEmail }}</span>
+                  </div>
+                </td>
+
+                <!-- Target Entity -->
+                <td class="py-3.5 px-4 whitespace-nowrap">
+                  <span class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-950 px-2.5 py-1 text-[11px] font-medium text-indigo-300 border border-zinc-800">
+                    <svg lucideDatabase class="h-3 w-3 text-indigo-400"></svg>
+                    <span>{{ log.entityName | labelFormat }}</span>
+                  </span>
+                </td>
+
+                <!-- Entity ID -->
+                <td class="py-3.5 px-4 whitespace-nowrap font-mono text-[11px] text-zinc-400">
+                  {{ log.entityId ? (log.entityId | slice: 0 : 8) + '...' : 'N/A' }}
+                </td>
+
+                <!-- Metadata Payload Indicator -->
+                <td class="py-3.5 px-4 whitespace-nowrap">
+                  @if (hasMetadataKeys(log.metadata)) {
+                    <span class="inline-flex items-center gap-1 rounded-md bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
+                      Payload Included
+                    </span>
+                  } @else {
+                    <span class="text-zinc-600 text-[11px]">Standard Log</span>
+                  }
+                </td>
+
+                <!-- Timestamp -->
+                <td class="py-3.5 px-4 whitespace-nowrap text-right text-zinc-400">
+                  <div class="inline-flex items-center gap-1">
+                    <svg lucideCalendar class="h-3 w-3 text-zinc-500"></svg>
+                    <span>{{ log.createdAt | date: 'medium' }}</span>
+                  </div>
+                </td>
+
+                <!-- Inspect Button -->
+                <td class="py-3.5 px-4 whitespace-nowrap text-center" (click)="$event.stopPropagation()">
+                  <button
+                    type="button"
+                    (click)="openDetail(log)"
+                    class="inline-flex items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950/80 p-1.5 text-zinc-400 hover:border-indigo-500/50 hover:bg-zinc-800 hover:text-indigo-300 transition cursor-pointer"
+                    title="View full audit log payload"
+                  >
+                    <svg lucideEye class="h-3.5 w-3.5"></svg>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="flex flex-wrap items-center justify-between gap-4 border-t border-zinc-800/80 bg-zinc-950/40 px-4 py-3 text-xs text-zinc-400">
+        <div>
+          Showing page <span class="font-semibold text-zinc-200">{{ currentPage() }}</span> of
+          <span class="font-semibold text-zinc-200">{{ totalPages() }}</span> ({{ totalItems() }} total records)
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            [disabled]="currentPage() === 1"
+            (click)="goToPage(currentPage() - 1)"
+            class="inline-flex items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+          >
+            <svg lucideChevronLeft class="h-3.5 w-3.5"></svg>
+            <span>Previous</span>
+          </button>
+
+          <button
+            type="button"
+            [disabled]="currentPage() >= totalPages()"
+            (click)="goToPage(currentPage() + 1)"
+            class="inline-flex items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+          >
+            <span>Next</span>
+            <svg lucideChevronRight class="h-3.5 w-3.5"></svg>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Audit Log Detail Modal -->
+<app-modal
+  [open]="detailModalOpen()"
+  title="Audit Event Inspection"
+  size="lg"
+  (closed)="closeDetail()"
+>
+  @if (selectedLog(); as item) {
+    <div class="space-y-5 text-xs">
+      <!-- Event Overview Summary: 2 Items per Row -->
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <!-- Item 1: Action -->
+        <div class="rounded-xl border border-zinc-800/80 bg-zinc-950/70 p-3.5 flex flex-col justify-between">
+          <div class="flex items-center gap-1.5 text-[10px] uppercase font-semibold text-zinc-400">
+            <svg lucideHistory class="h-3.5 w-3.5 text-indigo-400"></svg>
+            <span>Action Performed</span>
+          </div>
+          <div class="mt-2 flex items-center">
+            <app-badge [tone]="actionTone(item.action)">
+              {{ item.action | labelFormat }}
+            </app-badge>
+          </div>
+        </div>
+
+        <!-- Item 2: Target Entity -->
+        <div class="rounded-xl border border-zinc-800/80 bg-zinc-950/70 p-3.5 flex flex-col justify-between">
+          <div class="flex items-center gap-1.5 text-[10px] uppercase font-semibold text-zinc-400">
+            <svg lucideDatabase class="h-3.5 w-3.5 text-indigo-400"></svg>
+            <span>Target Entity</span>
+          </div>
+          <div class="mt-2 flex items-center">
+            <span class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 border border-zinc-800 px-2.5 py-1 font-semibold text-indigo-300">
+              {{ item.entityName | labelFormat }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Item 3: Actor -->
+        <div class="rounded-xl border border-zinc-800/80 bg-zinc-950/70 p-3.5 flex flex-col justify-between">
+          <div class="flex items-center gap-1.5 text-[10px] uppercase font-semibold text-zinc-400">
+            <svg lucideUser class="h-3.5 w-3.5 text-zinc-400"></svg>
+            <span>Actor / User</span>
+          </div>
+          <div class="mt-2 flex items-center gap-1.5">
+            <span class="font-medium text-zinc-100 text-xs break-all select-all" [title]="item.actorEmail">
+              {{ item.actorEmail }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Item 4: Timestamp -->
+        <div class="rounded-xl border border-zinc-800/80 bg-zinc-950/70 p-3.5 flex flex-col justify-between">
+          <div class="flex items-center gap-1.5 text-[10px] uppercase font-semibold text-zinc-400">
+            <svg lucideCalendar class="h-3.5 w-3.5 text-zinc-400"></svg>
+            <span>Event Timestamp</span>
+          </div>
+          <div class="mt-2 text-xs font-medium text-zinc-200">
+            {{ item.createdAt | date: 'medium' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Identity Breakdown -->
+      <div class="space-y-2 rounded-xl border border-zinc-800/60 bg-zinc-950/40 p-3.5">
+        <div class="flex items-center justify-between border-b border-zinc-800/50 pb-2">
+          <span class="text-zinc-400">Log Event ID</span>
+          <span class="font-mono text-zinc-200">{{ item.id }}</span>
+        </div>
+        <div class="flex items-center justify-between border-b border-zinc-800/50 pb-2">
+          <span class="text-zinc-400">Target Entity ID</span>
+          <span class="font-mono text-indigo-300">{{ item.entityId || 'None / Not Applicable' }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-zinc-400">Actor User UUID</span>
+          <span class="font-mono text-zinc-400">{{ item.actorId || 'System Automated' }}</span>
+        </div>
+      </div>
+
+      <!-- Metadata & Payload Section -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-zinc-200">Event Metadata & Payload</span>
+            @if (hasMetadataKeys(item.metadata)) {
+              <span class="rounded bg-indigo-950 px-2 py-0.5 text-[10px] text-indigo-300 border border-indigo-800/60 font-mono">
+                JSON
+              </span>
+            }
+          </div>
+
+          @if (hasMetadataKeys(item.metadata)) {
+            <button
+              type="button"
+              (click)="copyMetadata()"
+              class="inline-flex items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+            >
+              @if (copiedMetadata()) {
+                <svg lucideCheck class="h-3 w-3 text-emerald-400"></svg>
+                <span class="text-emerald-400 font-semibold">Copied!</span>
+              } @else {
+                <svg lucideCopy class="h-3 w-3"></svg>
+                <span>Copy JSON</span>
+              }
+            </button>
+          }
+        </div>
+
+        @if (hasMetadataKeys(item.metadata)) {
+          <pre class="max-h-64 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950 p-4 font-mono text-[11px] text-emerald-400 shadow-inner"><code>{{ item.metadata | json }}</code></pre>
+        } @else {
+          <div class="rounded-xl border border-dashed border-zinc-800 bg-zinc-950/30 p-6 text-center text-zinc-500">
+            No additional JSON payload attached to this log entry.
+          </div>
+        }
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex justify-end pt-3 border-t border-zinc-800">
+        <button
+          type="button"
+          (click)="closeDetail()"
+          class="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 hover:text-white transition cursor-pointer"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  }
+</app-modal>

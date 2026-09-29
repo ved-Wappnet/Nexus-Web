@@ -1,0 +1,520 @@
+<div class="flex min-h-screen bg-zinc-950">
+  @if (mobileOpen()) {
+  <button type="button" class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" aria-label="Close menu"
+    (click)="closeMobile()"></button>
+  }
+
+  <aside
+    class="fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0"
+    [class.-translate-x-full]="!mobileOpen()" [class.translate-x-0]="mobileOpen()">
+    <a routerLink="/"
+      class="flex h-16 items-center gap-3 border-b border-zinc-800/80 px-5 group cursor-pointer hover:bg-zinc-900/40 transition">
+      <div class="relative">
+        <img src="/brand/nexus-icon-64.png" alt="Nexus Market" width="32" height="32"
+          class="h-8 w-8 rounded-xl shadow-md shadow-indigo-500/25 group-hover:scale-105 transition" />
+        <span class="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-zinc-950"></span>
+      </div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-1.5">
+          <p class="text-base font-extrabold tracking-tight text-zinc-100 group-hover:text-indigo-300 transition">Nexus Market</p>
+          <span class="rounded bg-indigo-500/15 px-1.5 py-0.5 text-xs font-bold text-indigo-400 border border-indigo-500/30">B2B</span>
+        </div>
+        <p class="text-xs text-zinc-400 font-medium truncate">Multi-vendor commerce</p>
+      </div>
+    </a>
+
+    <!-- Navigation List -->
+    <nav class="flex-1 space-y-1 overflow-y-auto p-3.5">
+      <div class="px-3 pt-2 pb-2 flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-zinc-400">Navigation</span>
+      </div>
+      @for (item of nav(); track item.path) {
+        <a
+          [routerLink]="item.path"
+          class="group relative flex items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-all duration-150"
+          [class.bg-indigo-600/20]="isNavActive(item)"
+          [class.text-indigo-200]="isNavActive(item)"
+          [class.font-bold]="isNavActive(item)"
+          [class.border-indigo-500/40]="isNavActive(item)"
+          [class.shadow-sm]="isNavActive(item)"
+          [class.shadow-indigo-950/40]="isNavActive(item)"
+          [class.border-transparent]="!isNavActive(item)"
+          [class.text-zinc-300]="!isNavActive(item)"
+          [class.hover:bg-zinc-900/80]="!isNavActive(item)"
+          [class.hover:text-white]="!isNavActive(item)"
+          (click)="closeMobile()"
+        >
+          <!-- Active bar indicator on left -->
+          @if (isNavActive(item)) {
+            <span class="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-indigo-500 shadow-sm shadow-indigo-500/50"></span>
+          }
+
+          <div class="flex items-center gap-3 min-w-0">
+            @switch (item.path) {
+              @case ('/dashboard') {
+                <svg lucideLayoutDashboard class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-zinc-100]="!isNavActive(item)"></svg>
+              }
+              @case ('/products') {
+                <svg lucideStore class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-zinc-100]="!isNavActive(item)"></svg>
+              }
+              @case ('/products/manage') {
+                <svg lucidePackage class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-zinc-100]="!isNavActive(item)"></svg>
+              }
+              @case ('/categories') {
+                <svg lucideFolderTree class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-zinc-100]="!isNavActive(item)"></svg>
+              }
+              @case ('/wishlist') {
+                <svg lucideHeart class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-rose-400]="!isNavActive(item)"></svg>
+              }
+              @case ('/watchlist') {
+                <svg lucideTrendingDown class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-amber-400]="!isNavActive(item)"></svg>
+              }
+              @case ('/orders') {
+                <svg lucideReceipt class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-zinc-100]="!isNavActive(item)"></svg>
+              }
+              @case ('/inspection-dispute') {
+                <svg lucideShieldAlert class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-rose-400]="!isNavActive(item)"></svg>
+              }
+              @case ('/quotes') {
+                <svg lucideFileText class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-zinc-100]="!isNavActive(item)"></svg>
+              }
+              @case ('/tickets') {
+                <svg lucideMessageSquare class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-sky-400]="!isNavActive(item)"></svg>
+              }
+              @case ('/audits') {
+                <svg lucideShieldCheck class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-emerald-400]="!isNavActive(item)"></svg>
+              }
+              @case ('/delivery-partner') {
+                <svg lucideTruck class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-emerald-400]="!isNavActive(item)"></svg>
+              }
+              @case ('/admin/delivery-partners') {
+                <svg lucideShieldCheck class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-indigo-400]="!isNavActive(item)"></svg>
+              }
+              @default {
+                <svg lucideTag class="h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110" [class.text-indigo-400]="isNavActive(item)" [class.text-zinc-400]="!isNavActive(item)" [class.group-hover:text-zinc-100]="!isNavActive(item)"></svg>
+              }
+            }
+            <span class="truncate tracking-normal">{{ item.label }}</span>
+          </div>
+
+          @if (item.path === '/tickets' && ticketChat.totalUnreadCount() > 0) {
+            <span class="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white shadow-md shadow-rose-500/40 animate-pulse">
+              {{ ticketChat.totalUnreadCount() }}
+            </span>
+          }
+        </a>
+      }
+    </nav>
+
+    <!-- Sidebar Footer (Account Card) -->
+    <div class="border-t border-zinc-800/80 p-3 bg-zinc-950/60">
+      <div class="flex items-center justify-between gap-2.5 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 p-2.5 hover:border-zinc-700/70 transition group">
+        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-md shadow-indigo-950/50">
+            {{ initials() }}
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-bold text-zinc-100 truncate">
+              {{ auth.currentUser()?.name || auth.currentUser()?.email?.split('@')[0] }}
+            </p>
+            <div class="flex items-center mt-0.5">
+              @if (auth.role(); as role) {
+                <app-badge [tone]="roleTone(role)">{{ formatRole(role) }}</app-badge>
+              }
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          (click)="auth.logout()"
+          title="Sign out"
+          class="rounded-xl p-2 text-zinc-400 hover:bg-zinc-800 hover:text-rose-400 transition cursor-pointer shrink-0 ml-1"
+        >
+          <svg lucideLogOut class="h-4 w-4"></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="flex min-w-0 flex-1 flex-col">
+    <header
+      class="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-zinc-800 bg-zinc-950/80 px-4 backdrop-blur-md lg:px-8">
+      <div class="flex min-w-0 items-center gap-3">
+        <button type="button"
+          class="flex items-center gap-1.5 rounded-lg border border-zinc-800 p-2 text-xs font-medium text-zinc-400 lg:hidden hover:border-zinc-700"
+          (click)="toggleMobile()">
+          <svg lucideMenu class="h-4 w-4"></svg>
+          <span>Menu</span>
+        </button>
+        <nav class="hidden min-w-0 truncate text-sm font-medium text-zinc-300 md:flex md:items-center">
+          @for (crumb of crumbs(); track crumb; let last = $last) {
+          <span>{{ crumb }}</span>
+          @if (!last) {
+          <svg lucideChevronRight class="mx-1.5 h-3.5 w-3.5 text-zinc-500"></svg>
+          }
+          }
+        </nav>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Multi-Currency Switcher -->
+        <app-currency-selector />
+
+        <!-- Live Notification Center Bell & Dropdown -->
+        <div class="relative">
+          <button
+            id="notification-bell-trigger"
+            type="button"
+            class="relative flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-300 transition hover:border-indigo-500/50 hover:text-white cursor-pointer"
+            [class.border-indigo-500]="notificationService.isOpen()"
+            [class.text-white]="notificationService.isOpen()"
+            [class.bg-zinc-800]="notificationService.isOpen()"
+            title="Notifications"
+            (click)="notificationService.togglePanel()"
+          >
+            <svg lucideBell class="h-4 w-4 text-indigo-400"></svg>
+            @if (notificationService.unreadCount() > 0) {
+              <span
+                class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-bold text-white shadow-md shadow-indigo-600/50 animate-pulse"
+              >
+                {{ notificationService.unreadCount() }}
+              </span>
+            }
+          </button>
+
+          <!-- Notification Dropdown Panel -->
+          @if (notificationService.isOpen()) {
+            <app-notification-panel></app-notification-panel>
+          }
+        </div>
+
+        <!-- Support Tickets Quick Trigger & Badge -->
+        <a
+          routerLink="/tickets"
+          class="relative flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-300 transition hover:border-indigo-500/50 hover:text-white cursor-pointer"
+          title="Support Tickets"
+        >
+          <svg lucideMessageSquare class="h-4 w-4 text-indigo-400"></svg>
+          @if (ticketChat.totalUnreadCount() > 0) {
+            <span
+              class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white shadow-md shadow-rose-600/40 animate-pulse"
+            >
+              {{ ticketChat.totalUnreadCount() }}
+            </span>
+          }
+        </a>
+
+        <!-- Shopping Cart Trigger Button (Customer & Guest Buyers Only) -->
+        @if (!auth.role() || auth.role() === UserRoles.CUSTOMER) {
+          <button
+            type="button"
+            class="relative flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-300 transition hover:border-indigo-500/50 hover:text-white cursor-pointer"
+            title="Shopping Cart"
+            (click)="cart.toggle()"
+          >
+            <svg lucideShoppingBag class="h-4 w-4 text-indigo-400"></svg>
+            @if (cart.itemCount() > 0) {
+              <span
+                class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-bold text-white shadow-md shadow-indigo-600/40"
+              >
+                {{ cart.itemCount() }}
+              </span>
+            }
+          </button>
+        }
+
+
+        <!-- Price Watchlist (Vendors & Admins only) -->
+        @if (auth.role() === UserRoles.SUPPLIER || auth.role() === UserRoles.SUBADMIN || auth.role() === UserRoles.ADMIN) {
+        <a routerLink="/watchlist"
+          class="relative flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-300 transition hover:border-indigo-500/50 hover:text-white"
+          title="Price Drop Watchlist">
+          <svg lucideTrendingDown class="h-4 w-4 text-indigo-400"></svg>
+          @if (priceAlert.activeCount() > 0) {
+          <span
+            class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-bold text-white shadow-md shadow-indigo-600/40">
+            {{ priceAlert.activeCount() }}
+          </span>
+          }
+        </a>
+        }
+
+        <!-- Delivery Partner Fast Route Shortcut -->
+        @if (auth.role() === UserRoles.DELIVERY_PARTNER) {
+          <a
+            routerLink="/delivery-partner"
+            class="relative hidden sm:flex h-9 items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-950/20 px-3 text-xs font-semibold text-indigo-300 transition hover:border-indigo-500 hover:text-white hover:bg-indigo-900/40"
+            title="My Deliveries & Route"
+          >
+            <svg lucideTruck class="h-4 w-4 text-indigo-400"></svg>
+            <span>Delivery Portal</span>
+          </a>
+        }
+
+        @if (auth.role(); as role) {
+          <app-badge [tone]="roleTone(role)">{{ formatRole(role) }}</app-badge>
+        }
+        <div class="relative">
+          <button type="button"
+            class="flex cursor-pointer items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 py-1 pr-3 pl-1 text-sm transition hover:border-zinc-700"
+            (click)="toggleMenu()">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold">
+              {{ initials() }}
+            </span>
+            <span class="hidden max-w-[10rem] truncate text-zinc-300 sm:inline">{{ auth.currentUser()?.email }}</span>
+          </button>
+          @if (menuOpen()) {
+          <div class="absolute right-0 mt-2 w-56 rounded-xl border border-zinc-800 bg-zinc-900 p-2 shadow-xl z-50">
+            <div class="px-2 py-1.5 border-b border-zinc-800 mb-1">
+              <p class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Signed in as</p>
+              <p class="text-xs font-semibold text-zinc-200 truncate">{{ auth.currentUser()?.email }}</p>
+            </div>
+
+            @if (auth.role() === UserRoles.DELIVERY_PARTNER) {
+              <a routerLink="/delivery-partner" (click)="toggleMenu()" class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white">
+                <svg lucideTruck class="h-3.5 w-3.5 text-indigo-400"></svg>
+                <span>Deliveries & KYC Credentials</span>
+              </a>
+            } @else if (auth.role() === UserRoles.ADMIN || auth.role() === UserRoles.SUBADMIN) {
+              <a routerLink="/admin/delivery-partners" (click)="toggleMenu()" class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white">
+                <svg lucideShieldCheck class="h-3.5 w-3.5 text-indigo-400"></svg>
+                <span>Fleet & Courier Verification</span>
+              </a>
+            }
+
+            <button type="button"
+              class="flex w-full items-center gap-2 cursor-pointer rounded-lg px-2 py-2 text-left text-sm text-rose-300 hover:bg-zinc-800 mt-1 border-t border-zinc-800/60 pt-2"
+              (click)="auth.logout()">
+              <svg lucideLogOut class="h-4 w-4"></svg>
+              <span>Sign out</span>
+            </button>
+          </div>
+          }
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4 lg:p-8">
+      <router-outlet />
+    </main>
+
+    @if (!auth.role() || auth.role() === UserRoles.CUSTOMER) {
+      <app-cart-drawer />
+    }
+    @if (auth.role() !== UserRoles.DELIVERY_PARTNER) {
+      <app-compare-dock />
+      <app-compare-matrix-modal />
+      <app-price-alert-modal />
+      <app-rfq-modal />
+    }
+
+    <!-- Real-Time Ticket Toast Notification Banner -->
+    @if (ticketChat.activeToastNotification(); as notif) {
+      <div class="fixed bottom-5 right-5 z-[80] max-w-sm w-full animate-in slide-in-from-bottom-5 fade-in duration-300">
+        <div class="flex flex-col rounded-2xl border border-indigo-500/40 bg-zinc-900/95 p-4 shadow-2xl shadow-indigo-950/60 backdrop-blur-md">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400">
+                <svg lucideMessageSquare class="h-4 w-4"></svg>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs font-semibold text-zinc-100 truncate">{{ notif.senderName }}</span>
+                  <span class="rounded bg-indigo-500/20 px-1.5 py-0.2 text-[9px] font-medium text-indigo-300 border border-indigo-500/30">
+                    {{ notif.senderRole }}
+                  </span>
+                </div>
+                <p class="text-[11px] text-zinc-400 truncate font-mono">Ticket #{{ notif.ticketId.substring(0, 8) }}: {{ notif.ticketSubject }}</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              (click)="ticketChat.dismissToast()"
+              class="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white transition cursor-pointer shrink-0"
+            >
+              <svg lucideX class="h-3.5 w-3.5"></svg>
+            </button>
+          </div>
+
+          <div class="mt-2 text-xs text-zinc-200 line-clamp-2 bg-zinc-950/70 rounded-lg p-2.5 border border-zinc-800/80">
+            @if (notif.message && notif.message.trim().length > 0) {
+              "{{ notif.message }}"
+            } @else if (notif.attachmentsCount > 0) {
+              📎 Shared {{ notif.attachmentsCount }} attachment(s)
+            }
+          </div>
+
+          <div class="mt-3 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              (click)="ticketChat.dismissToast()"
+              class="rounded-lg px-2.5 py-1 text-xs text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+            >
+              Dismiss
+            </button>
+            <button
+              type="button"
+              (click)="onViewNotification(notif.ticketId)"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1 text-xs font-semibold text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-500 transition cursor-pointer"
+            >
+              <span>View & Reply</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Real-Time Live RFQ Trade Negotiation Chat Toast Notification Banner -->
+    @if (rfqChat.activeToastNotification(); as rfqNotif) {
+      <div class="fixed bottom-5 right-5 z-[80] max-w-sm w-full animate-in slide-in-from-bottom-5 fade-in duration-300">
+        <div class="flex flex-col rounded-2xl border border-amber-500/40 bg-zinc-900/98 p-4 shadow-2xl shadow-amber-950/50 backdrop-blur-xl">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 shadow-sm shadow-amber-500/10">
+                <svg lucideMessageSquare class="h-4.5 w-4.5"></svg>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs font-bold text-zinc-100 truncate">{{ rfqNotif.senderName }}</span>
+                  <span class="rounded bg-amber-500/20 px-1.5 py-0.2 text-[9px] font-semibold text-amber-300 border border-amber-500/30">
+                    {{ rfqNotif.senderRole }}
+                  </span>
+                </div>
+                <p class="text-[11px] text-zinc-400 truncate">RFQ: {{ rfqNotif.productTitle }}</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              (click)="rfqChat.dismissToast()"
+              class="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white transition cursor-pointer shrink-0"
+              title="Dismiss"
+            >
+              <svg lucideX class="h-3.5 w-3.5"></svg>
+            </button>
+          </div>
+
+          <div class="mt-2 text-xs text-zinc-200 line-clamp-2 bg-zinc-950/70 rounded-lg p-2.5 border border-zinc-800/80">
+            @if (rfqNotif.message && rfqNotif.message.trim().length > 0) {
+              "{{ rfqNotif.message }}"
+            } @else if (rfqNotif.attachmentsCount > 0) {
+              📎 Shared {{ rfqNotif.attachmentsCount }} attachment(s)
+            }
+          </div>
+
+          <div class="mt-3 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              (click)="rfqChat.dismissToast()"
+              class="rounded-lg px-2.5 py-1 text-xs text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+            >
+              Dismiss
+            </button>
+            <button
+              type="button"
+              (click)="onViewRfqNotification(rfqNotif.rfqId)"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1 text-xs font-semibold text-white shadow-md shadow-amber-600/30 hover:bg-amber-500 transition cursor-pointer"
+            >
+              <span>Negotiate Now</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Real-Time Courier Dock Arrival Radar Toast Banner (<500m proximity) -->
+    @if (orderSocket.activeDockArrivalAlert(); as dockAlert) {
+      <div class="fixed bottom-5 right-5 z-[90] max-w-md w-full animate-in slide-in-from-bottom-5 fade-in duration-300">
+        <div class="relative overflow-hidden rounded-2xl border border-emerald-500/50 bg-zinc-950/98 p-4 shadow-2xl shadow-emerald-950/60 backdrop-blur-xl">
+          <!-- Ambient glowing pulse backdrop -->
+          <div class="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none"></div>
+
+          <div class="flex items-start justify-between gap-3 relative z-10">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 shadow-sm shadow-emerald-500/20">
+                <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <svg lucideRadar class="h-5 w-5 animate-pulse"></svg>
+              </div>
+
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-xs font-bold text-white tracking-wide">🚨 Courier In Dock Perimeter</span>
+                  <span class="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    {{ dockAlert.distanceMeters }}m away • ~{{ dockAlert.estimatedArrivalMinutes }} min ETA
+                  </span>
+                </div>
+                <p class="text-[11px] text-zinc-400 truncate mt-0.5">Order #NX-{{ dockAlert.orderId.slice(0, 8).toUpperCase() }}</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              (click)="orderSocket.dismissDockArrivalAlert()"
+              class="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white transition cursor-pointer shrink-0"
+              title="Dismiss"
+            >
+              <svg lucideX class="h-3.5 w-3.5"></svg>
+            </button>
+          </div>
+
+          <!-- Courier & Vehicle Details Card -->
+          <div class="mt-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-2.5 relative z-10">
+            <div class="flex items-center justify-between gap-2 text-xs">
+              <div class="flex items-center gap-2 min-w-0">
+                <svg lucideTruck class="h-3.5 w-3.5 text-zinc-400 shrink-0"></svg>
+                <span class="font-semibold text-zinc-200 truncate">{{ dockAlert.partnerName }}</span>
+                <span class="text-zinc-500">•</span>
+                <span class="text-zinc-400 truncate">{{ dockAlert.vehicleType }}</span>
+              </div>
+              @if (dockAlert.vehiclePlateNumber) {
+                <span class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60 shrink-0">
+                  {{ dockAlert.vehiclePlateNumber }}
+                </span>
+              }
+            </div>
+
+            <div class="mt-1.5 flex items-center gap-1.5 text-[11px] text-zinc-400 truncate">
+              <span class="text-zinc-500">Destination:</span>
+              <span class="text-zinc-300 truncate">{{ dockAlert.destinationAddress || 'Receiving Dock 4' }}, {{ dockAlert.destinationCity || 'San Francisco' }}</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="mt-3.5 flex items-center justify-between gap-2 relative z-10">
+            <button
+              type="button"
+              (click)="audioTelemetry.toggleSound()"
+              class="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-300 cursor-pointer"
+              title="Toggle Telemetry Audio"
+            >
+              <span class="text-xs">{{ audioTelemetry.soundEnabled() ? '🔊 Audio on' : '🔇 Audio muted' }}</span>
+            </button>
+
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                (click)="orderSocket.dismissDockArrivalAlert()"
+                class="rounded-lg px-2.5 py-1 text-xs text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+              >
+                Dismiss
+              </button>
+              <button
+                type="button"
+                (click)="onScanDockQr(dockAlert.orderId)"
+                class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-emerald-600/30 hover:bg-emerald-500 transition cursor-pointer"
+              >
+                <svg lucideQrCode class="h-3.5 w-3.5"></svg>
+                <span>Scan Handover QR</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

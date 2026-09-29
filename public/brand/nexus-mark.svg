@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Nexus Market">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#67e8f9" stop-opacity="0.9"/>
+      <stop offset="40%" stop-color="#22d3ee" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#09090b"/>
+  <!-- Left open triangle / chevron -->
+  <path d="M28 34 L58 64 L28 94" fill="none" stroke="#4f46e5" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Right open triangle / chevron -->
+  <path d="M100 34 L70 64 L100 94" fill="none" stroke="#4f46e5" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="64" cy="64" r="20" fill="url(#g)"/>
+  <circle cx="64" cy="64" r="7" fill="#22d3ee"/>
+  <circle cx="64" cy="64" r="2.8" fill="#ecfeff"/>
+</svg>

@@ -1,0 +1,1140 @@
+@if (open() && ticket(); as t) {
+  <div class="fixed inset-0 z-[75] flex items-center justify-center p-3 sm:p-4">
+    <!-- Backdrop -->
+    <button
+      type="button"
+      class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+      aria-label="Close dialog"
+      (click)="close()"
+    ></button>
+
+    <!-- Dialog Window -->
+    <div
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+      class="relative z-10 flex h-[92vh] max-h-[880px] w-full max-w-4xl xl:max-w-5xl flex-col rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/90 overflow-hidden"
+    >
+      <!-- Hidden File Inputs -->
+      <input
+        #imageInput
+        type="file"
+        multiple
+        accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+        class="hidden"
+        (change)="onFilesSelected($event)"
+      />
+      <input
+        #documentInput
+        type="file"
+        multiple
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip"
+        class="hidden"
+        (change)="onFilesSelected($event)"
+      />
+
+      <!-- Drag & Drop Active Overlay -->
+      @if (isDragging()) {
+        <div class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-indigo-950/90 backdrop-blur-sm border-2 border-dashed border-indigo-400 m-3 rounded-xl pointer-events-none animate-in fade-in duration-200">
+          <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600/30 text-indigo-300 mb-3 shadow-lg shadow-indigo-600/30">
+            <svg lucidePaperclip class="h-8 w-8 animate-bounce"></svg>
+          </div>
+          <p class="text-base font-semibold text-white">Drop images or files here</p>
+          <p class="text-xs text-indigo-200 mt-1">Files will be attached to your reply</p>
+        </div>
+      }
+
+      <!-- Modal Header -->
+      <div class="border-b border-zinc-800/80 bg-zinc-900/70 px-4 sm:px-6 py-3.5 backdrop-blur-md">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <!-- Left Area: Icon, Subject + Status Badge, Subtitle Metadata -->
+          <div class="flex items-center justify-between sm:justify-start gap-3 min-w-0 flex-1">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 shadow-sm">
+                <svg lucideMessageSquare class="h-5 w-5"></svg>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <h2 class="text-sm sm:text-base font-bold text-zinc-100 truncate tracking-tight" [title]="t.subject">{{ t.subject }}</h2>
+                  <app-badge class="shrink-0" [tone]="statusTone(t.status)">{{ t.status | labelFormat }}</app-badge>
+                </div>
+                <div class="mt-1 flex items-center gap-2 text-xs text-zinc-400 whitespace-nowrap overflow-hidden">
+                  <span class="inline-flex items-center font-mono text-[11px] text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded border border-zinc-700/50 shrink-0">
+                    #{{ t.id.substring(0, 8) }}
+                  </span>
+                  <span class="text-zinc-600 select-none">•</span>
+                  <span class="text-zinc-400 text-xs shrink-0">
+                    {{ t.createdAt | date: 'MMM d, y, h:mm a' }}
+                  </span>
+                  @if (t.orderId) {
+                    <span class="text-zinc-600 select-none hidden sm:inline">•</span>
+                    <span class="text-indigo-400/90 text-xs font-mono hidden sm:inline truncate">Order #{{ t.orderId.substring(0, 8) }}</span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Mobile-only Close Button (Top-Right on small screens) -->
+            <button
+              type="button"
+              (click)="close()"
+              title="Close (Esc)"
+              class="sm:hidden rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition cursor-pointer shrink-0"
+            >
+              <svg lucideX class="h-4 w-4"></svg>
+            </button>
+          </div>
+
+          <!-- Right Area: Live Pill, Status Controls, Utility Icons -->
+          <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+            <!-- Real-Time Socket Connection Pill -->
+            <div
+              class="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium transition shrink-0"
+              [class]="chat.isConnected() ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'"
+              [title]="chat.isConnected() ? 'Real-time WebSocket connected' : 'Connecting to chat server...'"
+            >
+              <span
+                class="h-1.5 w-1.5 rounded-full shrink-0"
+                [class]="chat.isConnected() ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"
+              ></span>
+              <span class="hidden md:inline">{{ chat.isConnected() ? 'Live Connected' : 'Connecting...' }}</span>
+              <span class="inline md:hidden">{{ chat.isConnected() ? 'Live' : '...' }}</span>
+            </div>
+
+            <!-- Status Actions Segmented Pill Group -->
+            @if (canManage()) {
+              <div class="flex items-center p-0.5 rounded-xl bg-zinc-900/90 border border-zinc-800/90 shadow-inner shrink-0">
+                @if (t.status === TicketStatuses.OPEN) {
+                  <button
+                    type="button"
+                    class="rounded-lg px-2.5 py-1 text-xs font-semibold text-amber-300 hover:bg-amber-500/15 hover:text-amber-200 transition cursor-pointer whitespace-nowrap"
+                    (click)="changeStatus(TicketStatuses.IN_REVIEW)"
+                  >
+                    In Review
+                  </button>
+                }
+                @if (t.status !== TicketStatuses.RESOLVED && t.status !== TicketStatuses.CLOSED) {
+                  <button
+                    type="button"
+                    class="rounded-lg px-2.5 py-1 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/15 hover:text-emerald-200 transition cursor-pointer whitespace-nowrap"
+                    (click)="changeStatus(TicketStatuses.RESOLVED)"
+                  >
+                    Resolve
+                  </button>
+                }
+                @if (t.status !== TicketStatuses.CLOSED) {
+                  <button
+                    type="button"
+                    class="rounded-lg px-2.5 py-1 text-xs font-semibold text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition cursor-pointer whitespace-nowrap"
+                    (click)="changeStatus(TicketStatuses.CLOSED)"
+                  >
+                    Close
+                  </button>
+                }
+                @if (t.status === TicketStatuses.RESOLVED || t.status === TicketStatuses.CLOSED) {
+                  <button
+                    type="button"
+                    class="rounded-lg px-2.5 py-1 text-xs font-semibold text-indigo-300 hover:bg-indigo-500/15 hover:text-indigo-200 transition cursor-pointer whitespace-nowrap"
+                    (click)="changeStatus(TicketStatuses.OPEN)"
+                  >
+                    Reopen
+                  </button>
+                }
+              </div>
+            } @else {
+              @if (t.status !== TicketStatuses.CLOSED && t.status !== TicketStatuses.RESOLVED) {
+                <button
+                  type="button"
+                  class="rounded-xl border border-zinc-800 bg-zinc-900/90 px-3 py-1 text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition cursor-pointer whitespace-nowrap shrink-0"
+                  (click)="changeStatus(TicketStatuses.CLOSED)"
+                >
+                  Close Ticket
+                </button>
+              }
+            }
+
+            <div class="h-4 w-px bg-zinc-800/80 mx-0.5 shrink-0"></div>
+
+            <div class="flex items-center gap-1 shrink-0">
+              <!-- Export Conversation Transcript -->
+              <button
+                type="button"
+                (click)="exportTranscript()"
+                title="Export Conversation Transcript (.txt)"
+                class="rounded-xl border border-zinc-800/80 bg-zinc-900/80 p-1.5 text-zinc-400 hover:border-zinc-700 hover:text-white hover:bg-zinc-800 transition cursor-pointer shadow-sm"
+              >
+                <svg lucideDownload class="h-4 w-4"></svg>
+              </button>
+
+              <!-- Search in Chat Toggle Button -->
+              <button
+                type="button"
+                (click)="toggleSearch()"
+                title="Search conversation"
+                class="rounded-xl border border-zinc-800/80 bg-zinc-900/80 p-1.5 text-zinc-400 hover:border-zinc-700 hover:text-white hover:bg-zinc-800 transition cursor-pointer shadow-sm"
+                [class.border-indigo-500]="searchOpen()"
+                [class.text-indigo-400]="searchOpen()"
+                [class.bg-indigo-950/40]="searchOpen()"
+              >
+                <svg lucideSearch class="h-4 w-4"></svg>
+              </button>
+
+              <!-- Desktop Close Modal Button -->
+              <button
+                type="button"
+                (click)="close()"
+                title="Close dialog (Esc)"
+                class="hidden sm:inline-flex rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition cursor-pointer ml-0.5"
+              >
+                <svg lucideX class="h-4 w-4"></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- In-Chat Search Bar (Slide down) -->
+        @if (searchOpen()) {
+          <div class="mt-3 pt-3 border-t border-zinc-800/60 flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div class="relative flex-1">
+              <svg lucideSearch class="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-500"></svg>
+              <input
+                type="text"
+                [ngModel]="chatSearchQuery()"
+                (ngModelChange)="onSearchQueryChange($event)"
+                (keydown)="onSearchKeydown($event)"
+                placeholder="Search messages, senders, or files... (Enter: next, Shift+Enter: prev)"
+                class="w-full rounded-xl border border-zinc-700 bg-zinc-950 py-1.5 pl-9 pr-8 text-xs text-zinc-200 placeholder-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans"
+              />
+              @if (chatSearchQuery().length > 0) {
+                <button
+                  type="button"
+                  (click)="onSearchQueryChange('')"
+                  class="absolute right-2.5 top-2 text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                  title="Clear search"
+                >
+                  <svg lucideX class="h-3.5 w-3.5"></svg>
+                </button>
+              }
+            </div>
+
+            <!-- Matches Counter & Previous/Next Navigation Arrows -->
+            <div class="flex items-center gap-1 shrink-0">
+              @if (chatSearchQuery().trim().length > 0) {
+                @if (searchMatchesCount() > 0) {
+                  <span class="text-[11px] font-mono font-semibold text-indigo-300 px-2 py-0.5 rounded-lg bg-indigo-950/60 border border-indigo-800/60 select-none shadow-sm">
+                    {{ activeMatchIndex() + 1 }} / {{ searchMatchesCount() }}
+                  </span>
+
+                  <!-- Previous Match Button (↑) -->
+                  <button
+                    type="button"
+                    (click)="prevSearchMatch()"
+                    title="Previous match (Shift+Enter)"
+                    class="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-indigo-300 transition cursor-pointer"
+                  >
+                    <svg lucideArrowUp class="h-3.5 w-3.5"></svg>
+                  </button>
+
+                  <!-- Next Match Button (↓) -->
+                  <button
+                    type="button"
+                    (click)="nextSearchMatch()"
+                    title="Next match (Enter)"
+                    class="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-indigo-300 transition cursor-pointer"
+                  >
+                    <svg lucideArrowDown class="h-3.5 w-3.5"></svg>
+                  </button>
+                } @else {
+                  <span class="text-[11px] font-mono text-rose-400 px-2 py-0.5 rounded-lg bg-rose-950/40 border border-rose-800/40 select-none">
+                    0 matches
+                  </span>
+                }
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Related Order Summary Banner (If present) -->
+      @if (order(); as ord) {
+        <div class="flex items-center justify-between gap-3 border-b border-zinc-800/80 bg-indigo-950/20 px-4 sm:px-6 py-2.5 text-xs">
+          <div class="flex items-center gap-2 min-w-0">
+            <svg lucideFileText class="h-4 w-4 text-indigo-400 shrink-0"></svg>
+            <span class="font-medium text-zinc-300 shrink-0">Related Order:</span>
+            <span class="font-mono text-indigo-300 shrink-0">#{{ ord.id.substring(0, 8) }}</span>
+            <span class="text-zinc-400 shrink-0">· {{ ord.items.length }} item(s)</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="font-semibold text-zinc-200">{{ ord.totalAmount | currency }}</span>
+            <app-badge [tone]="statusTone(ord.status)">{{ ord.status | labelFormat }}</app-badge>
+          </div>
+        </div>
+      }
+
+      <!-- Message History Scroll Area -->
+      <div
+        #messagesContainer
+        (scroll)="onScroll($event)"
+        class="relative flex-1 space-y-3.5 overflow-y-auto p-4 sm:p-6 pb-8 scroll-smooth bg-gradient-to-b from-zinc-950 via-zinc-950 to-zinc-900/30"
+      >
+        <!-- Initial Inquiry Starter Bubble -->
+        <div class="flex gap-3 max-w-[90%] sm:max-w-[80%]">
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700 text-xs font-bold">
+            {{ getSenderInitials(undefined, undefined, UserRoles.CUSTOMER) }}
+          </div>
+          <div class="rounded-2xl rounded-tl-sm border border-zinc-800 bg-zinc-900/90 p-4 shadow-md">
+            <div class="flex items-center justify-between gap-3 pb-2 border-b border-zinc-800/80 mb-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-zinc-200">Customer Inquiry</span>
+                <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] font-medium text-zinc-400">Original Request</span>
+              </div>
+              <span class="text-[10px] text-zinc-500 font-mono">{{ t.createdAt | date: 'shortTime' }}</span>
+            </div>
+            <p class="text-xs text-zinc-300 whitespace-pre-line leading-relaxed">{{ t.body }}</p>
+          </div>
+        </div>
+
+        <!-- Chat Conversation Messages with Date Dividers & Action Bars -->
+        @for (msg of chat.messages(); track msg.id; let i = $index) {
+          <!-- Date Separator Pill (WhatsApp / Telegram style) -->
+          @if (getDateDivider(i, chat.messages()); as dateLabel) {
+            <div class="flex justify-center my-4">
+              <span class="rounded-full bg-zinc-800/80 border border-zinc-700/60 px-3 py-0.5 text-[10px] font-semibold text-zinc-400 shadow-sm backdrop-blur-sm">
+                {{ dateLabel }}
+              </span>
+            </div>
+          }
+
+          <!-- Message Bubble Container -->
+          <div
+            [id]="'msg-' + msg.id"
+            class="group relative flex gap-3 transition-all duration-300 rounded-2xl scroll-mt-6"
+            [class.justify-end]="isCurrentUser(msg.senderId)"
+            [class.justify-start]="!isCurrentUser(msg.senderId)"
+            [class.opacity-35]="chatSearchQuery().trim().length > 0 && !matchesSearch(msg)"
+            [class.ring-2]="isCurrentSearchMatch(msg.id)"
+            [class.ring-indigo-500]="isCurrentSearchMatch(msg.id)"
+            [class.bg-indigo-950/40]="isCurrentSearchMatch(msg.id)"
+            [class.p-2]="isCurrentSearchMatch(msg.id)"
+            [class.shadow-lg]="isCurrentSearchMatch(msg.id)"
+            [class.shadow-indigo-500/20]="isCurrentSearchMatch(msg.id)"
+          >
+            <!-- Sender Avatar (Incoming Messages) -->
+            @if (!isCurrentUser(msg.senderId)) {
+              <div
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-bold shadow-sm"
+                [class]="getSenderRoleRing(msg.senderRole)"
+                [title]="msg.senderName"
+              >
+                {{ getSenderInitials(msg.senderName, msg.senderEmail, msg.senderRole) }}
+              </div>
+            }
+
+            <!-- The Bubble -->
+            <div
+              class="relative max-w-[85%] sm:max-w-[75%] rounded-2xl p-3.5 shadow-md space-y-2"
+              [class]="msg.isDeleted
+                ? 'bg-zinc-900/50 border border-dashed border-zinc-800 text-zinc-500 italic'
+                : (isCurrentUser(msg.senderId)
+                    ? 'rounded-tr-sm bg-indigo-600 text-white shadow-indigo-950/30'
+                    : 'rounded-tl-sm border border-zinc-800/90 bg-zinc-900 text-zinc-200 shadow-black/40')"
+            >
+              <!-- Hover Action Bar (Reactions, Quote Reply & Copy) -->
+              <div
+                class="absolute -top-3.5 z-20 flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-900/95 px-2 py-0.5 shadow-lg backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                [class]="isCurrentUser(msg.senderId) ? 'right-2' : 'left-2'"
+              >
+                @if (!isDiscussionClosed()) {
+                  <!-- Quick Reactions -->
+                  <div class="flex items-center border-r border-zinc-700/70 pr-1 mr-0.5 space-x-1">
+                    @for (rxEmoji of ['👍', '❤️', '🎉', '👀']; track rxEmoji) {
+                      <button
+                        type="button"
+                        (click)="toggleReaction(msg.id, rxEmoji)"
+                        [title]="'React ' + rxEmoji"
+                        class="rounded-full px-0.5 py-0.2 text-xs hover:scale-125 transition cursor-pointer select-none"
+                        [class.bg-zinc-800]="hasReacted(msg.reactions, rxEmoji)"
+                      >
+                        {{ rxEmoji }}
+                      </button>
+                    }
+                    <!-- Open Full Emoji Picker Button -->
+                    <button
+                      type="button"
+                      (click)="toggleReactionPicker(msg.id)"
+                      title="React with any emoji..."
+                      class="rounded-full p-1 text-zinc-400 hover:bg-zinc-800 hover:text-amber-400 transition cursor-pointer"
+                    >
+                      <svg lucideSmile class="h-3 w-3"></svg>
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    (click)="setReplyTo(msg)"
+                    title="Reply to message"
+                    class="rounded-full p-1 text-zinc-400 hover:bg-zinc-800 hover:text-indigo-400 transition cursor-pointer"
+                  >
+                    <svg lucideReply class="h-3 w-3"></svg>
+                  </button>
+                }
+                <button
+                  type="button"
+                  (click)="copyMessageText(msg.message, msg.id)"
+                  title="Copy message text"
+                  class="rounded-full p-1 text-zinc-400 hover:bg-zinc-800 hover:text-indigo-400 transition cursor-pointer"
+                >
+                  <svg lucideCopy class="h-3 w-3"></svg>
+                </button>
+
+                <!-- Delete Message Action (Sender or Admin) -->
+                @if (canDelete(msg)) {
+                  <button
+                    type="button"
+                    (click)="confirmDelete(msg.id)"
+                    title="Delete message"
+                    class="rounded-full p-1 text-zinc-400 hover:bg-rose-950/70 hover:text-rose-400 transition cursor-pointer"
+                  >
+                    <svg lucideTrash2 class="h-3 w-3"></svg>
+                  </button>
+                }
+              </div>
+
+              <!-- Floating Full Emoji Picker Popover -->
+              @if (activeReactionPickerMessageId() === msg.id) {
+                <!-- Click Outside Backdrop -->
+                <div class="fixed inset-0 z-40" (click)="closeReactionPicker()"></div>
+
+                <div
+                  class="absolute bottom-full mb-2 z-50 w-72 sm:w-80 rounded-2xl border border-zinc-700/80 bg-zinc-950/98 p-3 shadow-2xl backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150"
+                  [class]="isCurrentUser(msg.senderId) ? 'right-0' : 'left-0'"
+                >
+                  <!-- Header: Search & Close -->
+                  <div class="flex items-center gap-2 pb-2 border-b border-zinc-800">
+                    <div class="relative flex-1">
+                      <input
+                        type="text"
+                        placeholder="Search all emojis..."
+                        [ngModel]="reactionEmojiSearch()"
+                        (ngModelChange)="reactionEmojiSearch.set($event)"
+                        class="w-full bg-zinc-900 text-xs px-2.5 py-1.5 rounded-lg border border-zinc-700 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 pr-7"
+                        autofocus
+                      />
+                      @if (reactionEmojiSearch()) {
+                        <button
+                          type="button"
+                          (click)="reactionEmojiSearch.set('')"
+                          class="absolute right-2 top-1.5 text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                        >
+                          <svg lucideX class="h-3 w-3"></svg>
+                        </button>
+                      }
+                    </div>
+                    <button
+                      type="button"
+                      (click)="closeReactionPicker()"
+                      class="p-1 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 cursor-pointer"
+                      title="Close emoji picker"
+                    >
+                      <svg lucideX class="h-3.5 w-3.5"></svg>
+                    </button>
+                  </div>
+
+                  <!-- Category Tabs -->
+                  <div class="flex items-center gap-1 py-1.5 border-b border-zinc-800/80 overflow-x-auto no-scrollbar text-xs">
+                    @for (tab of emojiCategoryTabs; track tab.id) {
+                      <button
+                        type="button"
+                        (click)="reactionEmojiCategory.set(tab.id)"
+                        class="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] whitespace-nowrap transition cursor-pointer"
+                        [class]="reactionEmojiCategory() === tab.id
+                          ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                          : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'"
+                      >
+                        <span>{{ tab.icon }}</span>
+                        <span>{{ tab.label }}</span>
+                      </button>
+                    }
+                  </div>
+
+                  <!-- Emoji Grid -->
+                  <div class="grid grid-cols-7 gap-1 max-h-48 overflow-y-auto pt-2 pr-1 select-none">
+                    @for (emoji of filteredReactionEmojis(); track emoji.char + emoji.name) {
+                      <button
+                        type="button"
+                        (click)="selectReactionFromPicker(msg.id, emoji.char)"
+                        [title]="emoji.name"
+                        class="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-zinc-800 hover:scale-110 active:scale-95 text-lg transition cursor-pointer"
+                      >
+                        {{ emoji.char }}
+                      </button>
+                    } @empty {
+                      <div class="col-span-7 py-6 text-center text-xs text-zinc-500">
+                        No emoji matching "{{ reactionEmojiSearch() }}"
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Delete Confirmation Popover -->
+              @if (deletingMessageId() === msg.id) {
+                <div
+                  class="absolute -top-4 z-30 flex items-center gap-1.5 rounded-lg border border-rose-500/50 bg-zinc-950 px-2.5 py-1 shadow-2xl text-[11px] backdrop-blur-md"
+                  [class]="isCurrentUser(msg.senderId) ? 'right-2' : 'left-2'"
+                >
+                  <span class="text-rose-400 font-medium">Delete message?</span>
+                  <button
+                    type="button"
+                    (click)="executeDelete(msg.id)"
+                    class="font-bold text-rose-300 hover:text-rose-100 px-1 py-0.5 rounded cursor-pointer"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    (click)="cancelDelete()"
+                    class="text-zinc-400 hover:text-zinc-200 px-1 py-0.5 rounded cursor-pointer"
+                  >
+                    No
+                  </button>
+                </div>
+              }
+
+              <!-- Message Meta Header -->
+              <div
+                class="flex items-center justify-between gap-3 pb-1.5"
+                [class]="isCurrentUser(msg.senderId) ? 'border-b border-indigo-500/40 text-indigo-200' : 'border-b border-zinc-800 text-zinc-400'"
+              >
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] font-semibold" [class.text-white]="isCurrentUser(msg.senderId)">
+                    {{ isCurrentUser(msg.senderId) ? 'You' : msg.senderName }}
+                  </span>
+                  @if (msg.senderRole === UserRoles.ADMIN || msg.senderRole === UserRoles.SUBADMIN) {
+                    <span class="rounded bg-indigo-500/20 px-1.5 py-0.2 text-[9px] font-medium text-indigo-300 border border-indigo-500/30">
+                      Support Desk
+                    </span>
+                  } @else if (msg.senderRole === UserRoles.SUPPLIER) {
+                    <span class="rounded bg-amber-500/20 px-1.5 py-0.2 text-[9px] font-medium text-amber-300 border border-amber-500/30">
+                      Vendor
+                    </span>
+                  }
+                </div>
+
+                <div class="flex items-center gap-1.5 text-[10px] opacity-75 font-mono">
+                  <span>{{ msg.createdAt | date: 'shortTime' }}</span>
+                  @if (isCurrentUser(msg.senderId)) {
+                    @if (msg.isRead) {
+                      <span title="Read by participant" class="flex items-center text-sky-300">
+                        <svg lucideCheckCheck class="h-3.5 w-3.5"></svg>
+                      </span>
+                    } @else {
+                      <span title="Sent" class="flex items-center text-indigo-200/60">
+                        <svg lucideCheck class="h-3.5 w-3.5"></svg>
+                      </span>
+                    }
+                  }
+                </div>
+              </div>
+
+              @if (msg.isDeleted) {
+                <div class="flex items-center gap-2 py-1 text-xs italic text-zinc-400">
+                  <svg lucideTrash2 class="h-3.5 w-3.5 text-zinc-500"></svg>
+                  <span>[This message was deleted]</span>
+                </div>
+              } @else {
+                <!-- Quoted Reference Box (Structured or legacy quoted reply) -->
+                @if (msg.replyTo; as reply) {
+                <button
+                  type="button"
+                  (click)="scrollToQuotedMessage(reply.id)"
+                  title="Click to jump to quoted message"
+                  class="w-full text-left rounded-lg p-2 text-xs border-l-3 mb-1.5 transition hover:brightness-110 cursor-pointer flex items-center justify-between gap-2"
+                  [class]="isCurrentUser(msg.senderId)
+                    ? 'border-indigo-300 bg-indigo-800/60 text-indigo-100'
+                    : 'border-indigo-500 bg-zinc-950/80 text-zinc-300'"
+                >
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between gap-1">
+                      <p class="font-semibold text-[10px] text-indigo-300 truncate">{{ reply.senderName }}</p>
+                      <span class="text-[9px] opacity-70 flex items-center gap-0.5 shrink-0">
+                        <svg lucideReply class="h-2.5 w-2.5"></svg> Jump
+                      </span>
+                    </div>
+                    @if (getQuotedDisplay(reply); as display) {
+                      <p class="text-[11px] truncate opacity-90 italic mt-0.5 flex items-center gap-1.5">
+                        @if (display.icon === 'image') {
+                          <svg lucideImage class="h-3 w-3 shrink-0 inline-block text-indigo-300"></svg>
+                        } @else if (display.icon === 'file') {
+                          <svg lucideFileText class="h-3 w-3 shrink-0 inline-block text-indigo-300"></svg>
+                        }
+                        <span class="truncate">"{{ display.text }}"</span>
+                      </p>
+                    }
+                  </div>
+
+                  <!-- Optional Image Thumbnail Preview (WhatsApp / Telegram style) -->
+                  @if (getQuotedThumbnail(reply); as thumbUrl) {
+                    <img
+                      [src]="thumbUrl"
+                      alt="Quoted attachment"
+                      class="h-9 w-9 shrink-0 rounded-md object-cover border border-black/30 shadow-sm"
+                    />
+                  }
+                </button>
+              } @else if (parseMessage(msg.message).quote; as q) {
+                <div
+                  class="rounded-lg p-2 text-xs border-l-3 mb-1.5"
+                  [class]="isCurrentUser(msg.senderId)
+                    ? 'border-indigo-300 bg-indigo-800/50 text-indigo-100'
+                    : 'border-indigo-500 bg-zinc-950/70 text-zinc-300'"
+                >
+                  <p class="font-semibold text-[10px] text-indigo-300">{{ q.author }}</p>
+                  <p class="text-[11px] truncate opacity-90 italic">"{{ q.text }}"</p>
+                </div>
+              }
+
+              <!-- Attachments Gallery & Cards -->
+              @if (msg.attachments && msg.attachments.length > 0) {
+                <div class="space-y-2">
+                  <!-- Images Grid (WhatsApp / Instagram style) -->
+                  <div
+                    class="grid gap-1.5"
+                    [class]="msg.attachments.length > 1 ? 'grid-cols-2' : 'grid-cols-1'"
+                  >
+                    @for (att of msg.attachments; track att.url) {
+                      @if (isImageAttachment(att)) {
+                        <div
+                          class="group/img relative overflow-hidden rounded-xl bg-zinc-950/40 border border-black/20 cursor-pointer aspect-video sm:aspect-4/3 max-h-56"
+                          (click)="openImagePreview(att.url, att.name)"
+                        >
+                          <img
+                            [src]="att.url"
+                            [alt]="att.name"
+                            class="h-full w-full object-cover transition-transform duration-300 group-hover/img:scale-105"
+                            loading="lazy"
+                          />
+                          <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity">
+                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-black/70 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+                              <svg lucideEye class="h-3.5 w-3.5"></svg>
+                              <span>View</span>
+                            </span>
+                          </div>
+                        </div>
+                      }
+                    }
+                  </div>
+
+                  <!-- Document Cards (WhatsApp style) -->
+                  @for (att of msg.attachments; track att.url) {
+                    @if (!isImageAttachment(att)) {
+                      <a
+                        [href]="att.url"
+                        target="_blank"
+                        [download]="att.name"
+                        class="flex items-center justify-between gap-3 p-2.5 rounded-xl border transition group/doc"
+                        [class]="isCurrentUser(msg.senderId)
+                          ? 'bg-indigo-700/50 border-indigo-400/30 hover:bg-indigo-700/80 text-white'
+                          : 'bg-zinc-950/60 border-zinc-800 hover:border-zinc-700 text-zinc-200'"
+                      >
+                        <div class="flex items-center gap-2.5 min-w-0">
+                          <div
+                            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border font-mono text-[10px] font-bold"
+                            [class]="getFileCardColor(att.name, att.mimeType)"
+                          >
+                            {{ getFileExt(att.name) }}
+                          </div>
+                          <div class="min-w-0">
+                            <p class="text-xs font-medium truncate group-hover/doc:underline" [title]="att.name">{{ att.name }}</p>
+                            <p class="text-[10px] opacity-75 mt-0.5">
+                              {{ formatFileSize(att.size) }}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div
+                          class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition"
+                          [class]="isCurrentUser(msg.senderId)
+                            ? 'border-indigo-400/40 bg-indigo-600 group-hover/doc:bg-indigo-500 text-white'
+                            : 'border-zinc-700 bg-zinc-800 group-hover/doc:bg-zinc-700 text-zinc-300'"
+                        >
+                          <svg lucideDownload class="h-3.5 w-3.5"></svg>
+                        </div>
+                      </a>
+                    }
+                  }
+                </div>
+              }
+
+              <!-- Text Message Content -->
+              @if (parseMessage(msg.message).body; as bodyText) {
+                @if (bodyText.trim().length > 0) {
+                  <p class="text-xs whitespace-pre-line leading-relaxed" [class.text-zinc-100]="isCurrentUser(msg.senderId)" [class.text-zinc-300]="!isCurrentUser(msg.senderId)">
+                    @for (token of formatMessageTokens(bodyText); track $index) {
+                      @if (token.type === 'mention') {
+                        <span
+                          class="inline-flex items-center gap-0.5 px-2 py-0.5 mx-0.5 rounded-md text-[11px] font-semibold transition-all select-none align-baseline shadow-sm"
+                          [class]="getMentionBadgeClass(token)"
+                          [title]="token.isSelfMention ? 'You were mentioned in this message' : ('Tagged @' + token.text)"
+                        >
+                          <svg lucideAtSign class="h-3 w-3 inline-block shrink-0 -mt-0.5"></svg>
+                          <span>{{ token.text }}</span>
+                        </span>
+                      } @else {
+                        <span>{{ token.text }}</span>
+                      }
+                    }
+                  </p>
+                }
+              }
+
+              <!-- Message Reactions Badges -->
+              @if (getReactionEntries(msg.reactions); as reactionEntries) {
+                @if (reactionEntries.length > 0) {
+                  <div class="flex flex-wrap items-center gap-1 pt-1">
+                    @for (rx of reactionEntries; track rx.emoji) {
+                      <button
+                        type="button"
+                        (click)="toggleReaction(msg.id, rx.emoji)"
+                        [disabled]="isDiscussionClosed()"
+                        [title]="rx.users.length + ' reaction(s)'"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition cursor-pointer select-none"
+                        [class]="hasReacted(msg.reactions, rx.emoji)
+                          ? (isCurrentUser(msg.senderId)
+                              ? 'bg-indigo-700 border-indigo-300 text-white font-bold'
+                              : 'bg-indigo-950 border-indigo-500 text-indigo-300 font-bold')
+                          : (isCurrentUser(msg.senderId)
+                              ? 'bg-indigo-800/60 border-indigo-500/40 text-indigo-100 hover:bg-indigo-700/60'
+                              : 'bg-zinc-800/80 border-zinc-700 text-zinc-300 hover:bg-zinc-700/80')"
+                      >
+                        <span class="text-xs">{{ rx.emoji }}</span>
+                        <span class="text-[10px]">{{ rx.count }}</span>
+                      </button>
+                    }
+                    @if (!isDiscussionClosed()) {
+                      <button
+                        type="button"
+                        (click)="toggleReactionPicker(msg.id)"
+                        title="Add reaction"
+                        class="inline-flex items-center justify-center h-6 w-6 rounded-full border border-dashed border-zinc-700 text-zinc-400 hover:text-indigo-300 hover:border-indigo-400 transition cursor-pointer"
+                      >
+                        <svg lucidePlus class="h-3 w-3"></svg>
+                      </button>
+                    }
+                  </div>
+                }
+              }
+            }
+
+              <!-- Copied Notification Badge Feedback -->
+              @if (copiedMessageId() === msg.id) {
+                <div class="text-[10px] font-medium text-emerald-300 flex items-center gap-1 animate-in fade-in duration-150 pt-0.5">
+                  <svg lucideCheck class="h-3 w-3"></svg>
+                  <span>Copied to clipboard</span>
+                </div>
+              }
+            </div>
+
+            <!-- Sender Avatar (Outgoing Messages) -->
+            @if (isCurrentUser(msg.senderId)) {
+              <div
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-indigo-400/40 bg-indigo-900 text-indigo-200 text-xs font-bold shadow-sm"
+                [title]="msg.senderName"
+              >
+                {{ getSenderInitials(msg.senderName, msg.senderEmail, msg.senderRole) }}
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Floating "Scroll to Bottom" Button -->
+        @if (showScrollBottom()) {
+          <div class="sticky bottom-2 flex justify-center pointer-events-none z-30">
+            <button
+              type="button"
+              (click)="scrollToBottomSmooth()"
+              class="pointer-events-auto flex items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-900/90 px-3 py-1.5 text-xs font-semibold text-zinc-200 shadow-xl backdrop-blur-md hover:bg-zinc-800 hover:text-white transition cursor-pointer animate-in fade-in zoom-in-95 duration-150"
+            >
+              <svg lucideArrowDown class="h-3.5 w-3.5 text-indigo-400"></svg>
+              <span>Latest Messages</span>
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- Message Composer Footer -->
+      <div class="border-t border-zinc-800/80 bg-zinc-900/95 p-3 sm:p-4 space-y-2">
+        <!-- Real-Time Typing Indicator (Positioned cleanly above composer controls so it never gets cut off) -->
+        @if (chat.isTypingUser(); as tu) {
+          <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-950/70 border border-indigo-500/30 text-xs text-indigo-300 animate-in fade-in slide-in-from-bottom-1 duration-150 w-fit shadow-sm">
+            <div class="flex items-center gap-1">
+              <span class="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce"></span>
+              <span class="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:0.2s]"></span>
+              <span class="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:0.4s]"></span>
+            </div>
+            <span class="text-[11px] font-medium">{{ tu.email.split('@')[0] }} is typing...</span>
+          </div>
+        }
+        @if (isDiscussionClosed()) {
+          <div class="flex items-center justify-between rounded-xl bg-zinc-900 px-4 py-3 text-xs text-zinc-400 border border-zinc-800 shadow-sm">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="h-2 w-2 shrink-0 rounded-full" [class]="t.status === TicketStatuses.RESOLVED ? 'bg-emerald-400' : 'bg-zinc-500'"></span>
+              <span class="truncate">
+                @if (t.status === TicketStatuses.RESOLVED) {
+                  This ticket has been marked as resolved. Further messages are not permitted.
+                } @else {
+                  This ticket is closed. Further messages are not permitted.
+                }
+              </span>
+            </div>
+            @if (canManage()) {
+              <button
+                type="button"
+                (click)="changeStatus(TicketStatuses.OPEN)"
+                class="font-semibold text-indigo-400 hover:text-indigo-300 transition cursor-pointer ml-3 shrink-0"
+              >
+                Reopen Ticket
+              </button>
+            }
+          </div>
+        } @else {
+          <!-- Quoted Reply-To Banner (WhatsApp / Telegram style) -->
+          @if (replyingTo(); as rep) {
+            <div class="flex items-center justify-between gap-3 rounded-xl border-l-4 border-indigo-500 bg-zinc-950/80 p-2.5 text-xs border border-zinc-800 shadow-sm animate-in slide-in-from-bottom-2 fade-in duration-150">
+              <div class="min-w-0 flex-1">
+                <span class="font-semibold text-indigo-400 text-[11px]">Replying to {{ rep.senderName }}</span>
+                @if (getReplyingToDisplay(rep); as repDisplay) {
+                  <p class="text-zinc-300 text-xs truncate mt-0.5 italic flex items-center gap-1.5">
+                    @if (repDisplay.icon === 'image') {
+                      <svg lucideImage class="h-3.5 w-3.5 text-indigo-400 shrink-0"></svg>
+                    } @else if (repDisplay.icon === 'file') {
+                      <svg lucideFileText class="h-3.5 w-3.5 text-indigo-400 shrink-0"></svg>
+                    }
+                    <span class="truncate">"{{ repDisplay.text }}"</span>
+                  </p>
+                }
+              </div>
+
+              <div class="flex items-center gap-2 shrink-0">
+                @if (getMessageThumbnail(rep); as thumbUrl) {
+                  <img
+                    [src]="thumbUrl"
+                    alt="Replying attachment preview"
+                    class="h-9 w-9 rounded-md object-cover border border-zinc-700/60 shadow-sm"
+                  />
+                }
+                <button
+                  type="button"
+                  (click)="clearReplyTo()"
+                  title="Cancel reply"
+                  class="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+                >
+                  <svg lucideX class="h-3.5 w-3.5"></svg>
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Quick Response Chips (Suggested Replies) -->
+          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-400 uppercase tracking-wider pl-1 shrink-0">
+              <svg lucideSparkles class="h-3.5 w-3.5 text-indigo-400"></svg>
+              <span>Quick:</span>
+            </span>
+            @for (tpl of quickTemplates; track tpl) {
+              <button
+                type="button"
+                (click)="useTemplate(tpl)"
+                class="rounded-full border border-zinc-800 bg-zinc-950/80 px-3 py-1 text-xs font-medium text-zinc-300 hover:border-indigo-500/50 hover:bg-indigo-600/15 hover:text-indigo-200 transition cursor-pointer shrink-0 whitespace-nowrap shadow-sm"
+              >
+                {{ tpl }}
+              </button>
+            }
+          </div>
+
+          <!-- Quick Emoji Bar Tray with Categories -->
+          @if (emojiBarOpen()) {
+            <div class="rounded-xl bg-zinc-950 border border-zinc-800/90 p-2 space-y-1.5 animate-in fade-in slide-in-from-bottom-1 duration-150">
+              <!-- Category Tabs -->
+              <div class="flex items-center gap-1 overflow-x-auto no-scrollbar text-xs pb-1 border-b border-zinc-800/60">
+                @for (tab of emojiCategoryTabs; track tab.id) {
+                  <button
+                    type="button"
+                    (click)="reactionEmojiCategory.set(tab.id)"
+                    class="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] whitespace-nowrap transition cursor-pointer"
+                    [class]="reactionEmojiCategory() === tab.id
+                      ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'"
+                  >
+                    <span>{{ tab.icon }}</span>
+                    <span>{{ tab.label }}</span>
+                  </button>
+                }
+              </div>
+
+              <!-- Filtered Emojis (scrollable tray) -->
+              <div class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                @for (item of filteredReactionEmojis(); track item.char + item.name) {
+                  <button
+                    type="button"
+                    (click)="insertEmoji(item.char)"
+                    [title]="item.name"
+                    class="rounded-lg p-1 text-lg hover:bg-zinc-800 transition cursor-pointer hover:scale-125 duration-150 shrink-0"
+                  >
+                    {{ item.char }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Pending Attachments Pre-send Strip -->
+          @if (pendingAttachments().length > 0) {
+            <div class="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 no-scrollbar">
+              @for (att of pendingAttachments(); track att.id) {
+                <div class="relative flex items-center gap-2 rounded-xl border border-zinc-700/80 bg-zinc-950 p-1.5 pr-2.5 shrink-0 max-w-[220px]">
+                  @if (att.previewUrl) {
+                    <!-- Image Thumbnail Preview -->
+                    <img
+                      [src]="att.previewUrl"
+                      [alt]="att.name"
+                      class="h-10 w-10 rounded-lg object-cover border border-zinc-800"
+                    />
+                  } @else {
+                    <!-- Document Icon Preview -->
+                    <div
+                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border font-mono text-[9px] font-bold"
+                      [class]="getFileCardColor(att.name, att.mimeType)"
+                    >
+                      {{ getFileExt(att.name) }}
+                    </div>
+                  }
+
+                  <div class="min-w-0 flex-1">
+                    <p class="text-xs font-medium text-zinc-200 truncate" [title]="att.name">{{ att.name }}</p>
+                    <div class="flex items-center gap-1.5 mt-0.5 text-[10px]">
+                      <span class="text-zinc-400">{{ formatFileSize(att.size) }}</span>
+                      @if (att.isUploading) {
+                        <span class="inline-block h-2.5 w-2.5 animate-spin rounded-full border border-indigo-400 border-t-transparent"></span>
+                      } @else if (att.error) {
+                        <span class="text-rose-400 font-medium">Failed</span>
+                      } @else {
+                        <span class="text-emerald-400 font-medium">Ready</span>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Remove Attachment Button -->
+                  <button
+                    type="button"
+                    (click)="removePendingAttachment(att.id)"
+                    class="rounded-full p-1 text-zinc-400 hover:bg-zinc-800 hover:text-rose-400 transition cursor-pointer"
+                    title="Remove attachment"
+                  >
+                    <svg lucideX class="h-3.5 w-3.5"></svg>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Floating Mention Suggestions Dropdown -->
+          @if (mentionMenuOpen() && filteredMentionUsers().length > 0) {
+            <div class="relative z-30">
+              <div
+                class="absolute bottom-2 left-0 w-full max-w-sm rounded-2xl border border-zinc-700/80 bg-zinc-900/95 backdrop-blur-xl shadow-2xl p-1.5 space-y-1 animate-in fade-in slide-in-from-bottom-2 duration-150 ring-1 ring-black/40 overflow-hidden"
+              >
+                <div class="flex items-center justify-between px-2.5 py-1 text-[11px] font-semibold text-zinc-400 border-b border-zinc-800/80">
+                  <span class="flex items-center gap-1.5">
+                    <svg lucideAtSign class="h-3.5 w-3.5 text-indigo-400"></svg>
+                    Mention participant or team
+                  </span>
+                  <span class="text-[10px] text-zinc-500 font-mono">↑↓ navigate, ↵ pick</span>
+                </div>
+
+                <div class="max-h-48 overflow-y-auto space-y-0.5 custom-scrollbar">
+                  @for (user of filteredMentionUsers(); track user.id; let idx = $index) {
+                    <button
+                      type="button"
+                      (click)="selectMention(user)"
+                      (mouseenter)="selectedMentionIndex.set(idx)"
+                      class="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-colors cursor-pointer group"
+                      [class.bg-indigo-600]="selectedMentionIndex() === idx"
+                      [class.text-white]="selectedMentionIndex() === idx"
+                      [class.hover:bg-zinc-800]="selectedMentionIndex() !== idx"
+                    >
+                      <!-- Avatar Initials Badge -->
+                      <div
+                        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold border transition"
+                        [class]="selectedMentionIndex() === idx
+                          ? 'bg-white/20 text-white border-white/30'
+                          : getSenderRoleRing(user.role)"
+                      >
+                        {{ user.avatarInitials }}
+                      </div>
+
+                      <!-- Name & Subtitle Info -->
+                      <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5">
+                          <span
+                            class="text-xs font-bold truncate"
+                            [class.text-white]="selectedMentionIndex() === idx"
+                            [class.text-zinc-200]="selectedMentionIndex() !== idx"
+                          >
+                            {{ user.name }}
+                          </span>
+                          <span
+                            class="text-[9px] font-semibold px-1.5 py-0.2 rounded-md uppercase tracking-wider"
+                            [class]="getMentionRoleBadgeClass(user.role, selectedMentionIndex() === idx)"
+                          >
+                            {{ user.role }}
+                          </span>
+                        </div>
+                        @if (user.subtitle) {
+                          <p
+                            class="text-[10px] truncate"
+                            [class.text-indigo-200]="selectedMentionIndex() === idx"
+                            [class.text-zinc-400]="selectedMentionIndex() !== idx"
+                          >
+                            {{ user.subtitle }}
+                          </p>
+                        }
+                      </div>
+
+                      <!-- Tag hint -->
+                      <span
+                        class="text-[10px] font-mono opacity-0 group-hover:opacity-100 transition"
+                        [class.opacity-100]="selectedMentionIndex() === idx"
+                        [class.text-white]="selectedMentionIndex() === idx"
+                        [class.text-zinc-500]="selectedMentionIndex() !== idx"
+                      >
+                        @{{ user.tagHandle || user.name }}
+                      </span>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Unified Input Card: Perfectly Aligned Message Composer -->
+          <form (submit)="send(); $event.preventDefault()" class="rounded-2xl border border-zinc-800 bg-zinc-950 p-2.5 shadow-inner transition-all focus-within:border-indigo-500/80 focus-within:ring-1 focus-within:ring-indigo-500/50 space-y-2">
+            <!-- Message Textarea -->
+            <textarea
+              #replyTextarea
+              rows="2"
+              [ngModel]="replyText()"
+              (ngModelChange)="replyText.set($event); onComposerInput()"
+              (keydown)="onKeydown($event)"
+              name="replyMessage"
+              placeholder="Type a message or @ to mention someone (Ctrl+V)..."
+              class="w-full resize-none border-0 bg-transparent px-2 pt-1 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-0 leading-relaxed font-sans"
+            ></textarea>
+
+            <!-- Bottom Toolbar: Media Icons & Send Button in One Aligned Row -->
+            <div class="flex items-center justify-between gap-2 pt-1 border-t border-zinc-900">
+              <div class="flex items-center gap-1 text-zinc-400">
+                <button
+                  type="button"
+                  (click)="toggleEmojiBar()"
+                  title="Add emoji"
+                  class="rounded-xl p-2 text-zinc-400 hover:bg-zinc-800 hover:text-amber-400 transition cursor-pointer"
+                  [class.text-amber-400]="emojiBarOpen()"
+                >
+                  <svg lucideSmile class="h-4.5 w-4.5"></svg>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="triggerMention()"
+                  title="Tag person or role (@mention)"
+                  class="rounded-xl p-2 text-zinc-400 hover:bg-zinc-800 hover:text-indigo-400 transition cursor-pointer"
+                  [class.text-indigo-400]="mentionMenuOpen()"
+                >
+                  <svg lucideAtSign class="h-4.5 w-4.5"></svg>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="triggerFileInput('image')"
+                  title="Send Photos & Media"
+                  class="rounded-xl p-2 text-zinc-400 hover:bg-zinc-800 hover:text-indigo-400 transition cursor-pointer"
+                >
+                  <svg lucideImage class="h-4.5 w-4.5"></svg>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="triggerFileInput('doc')"
+                  title="Attach Document (PDF, Word, Excel, CSV, ZIP)"
+                  class="rounded-xl p-2 text-zinc-400 hover:bg-zinc-800 hover:text-indigo-400 transition cursor-pointer"
+                >
+                  <svg lucidePaperclip class="h-4.5 w-4.5"></svg>
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                [disabled]="!canSend()"
+                class="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-500 active:scale-95 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                @if (chat.isSending() || hasUploadingAttachments()) {
+                  <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                } @else {
+                  <svg lucideSend class="h-4 w-4"></svg>
+                  <span>Send</span>
+                }
+              </button>
+            </div>
+          </form>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Image Lightbox Preview Modal -->
+  @if (activePreviewImage(); as img) {
+    <div class="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
+      <button
+        type="button"
+        class="absolute inset-0 bg-transparent"
+        aria-label="Close image preview"
+        (click)="closeImagePreview()"
+      ></button>
+
+      <div class="relative z-10 flex flex-col items-center max-w-4xl max-h-[90vh] w-full">
+        <!-- Top Toolbar -->
+        <div class="flex items-center justify-between w-full pb-3 text-white border-b border-zinc-800/80 mb-3 px-2">
+          <span class="text-xs font-medium text-zinc-300 truncate max-w-md">{{ img.name || 'Image Preview' }}</span>
+          <div class="flex items-center gap-2">
+            <a
+              [href]="img.url"
+              target="_blank"
+              download
+              class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/80 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-700 hover:text-white transition"
+            >
+              <svg lucideDownload class="h-3.5 w-3.5"></svg>
+              <span>Download</span>
+            </a>
+            <button
+              type="button"
+              (click)="closeImagePreview()"
+              class="rounded-lg bg-zinc-800/80 p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-white transition cursor-pointer"
+            >
+              <svg lucideX class="h-4 w-4"></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Image Container -->
+        <div class="overflow-auto rounded-xl max-h-[75vh] flex items-center justify-center">
+          <img
+            [src]="img.url"
+            [alt]="img.name || 'Preview'"
+            class="max-h-[75vh] max-w-full object-contain rounded-xl shadow-2xl"
+          />
+        </div>
+      </div>
+    </div>
+  }
+}

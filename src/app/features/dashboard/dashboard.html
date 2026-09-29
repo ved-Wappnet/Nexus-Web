@@ -1,0 +1,397 @@
+@if (loading()) {
+  <app-loader variant="dashboard" />
+} @else if (payload(); as res) {
+  <div class="mb-8 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <p class="text-xs font-medium uppercase tracking-wider text-indigo-400">
+        {{ payload()?.role }} workspace
+      </p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight text-zinc-100">Dashboard</h1>
+    </div>
+    <p class="text-sm text-zinc-500">{{ auth.currentUser()?.email }}</p>
+  </div>
+
+  <div class="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    @for (metric of metrics(); track metric.label) {
+      <app-stat-card [label]="metric.label" [value]="metric.value" [hint]="metric.hint" />
+    }
+  </div>
+
+  @if (customer(); as data) {
+    <!-- Milestone Escrow & Cashflow Pipeline Widget -->
+    <div class="mb-6">
+      <app-escrow-pipeline-card
+        [data]="data.escrowPipeline"
+        title="Buyer Escrow Protection & Cashflow"
+        subtitle="Real-time capital tracking across Upfront (30%), In-Transit (40%), and Delivery (30%) milestones."
+      />
+    </div>
+
+    <!-- Executive Charts Row 1: Spend Trend & Fulfillment Pipeline -->
+    <div class="mb-6 grid gap-6 lg:grid-cols-3">
+      <div class="lg:col-span-2">
+        <app-revenue-chart [trend]="data.trend" title="Procurement Spend Over Time" />
+      </div>
+      <div>
+        <app-fulfillment-donut [pipeline]="data.pipeline" title="Order Status Breakdown" />
+      </div>
+    </div>
+
+    <!-- Executive Charts Row 2: Category Spend & RFQ Negotiation Funnel -->
+    <div class="mb-6 grid gap-6 lg:grid-cols-2">
+      <app-category-bar [distribution]="data.categoryDistribution" title="Spend by Category" />
+      <app-rfq-funnel [funnel]="data.rfqFunnel" />
+    </div>
+
+    <!-- Orders & Purchases Tracking -->
+    <div class="grid gap-6 xl:grid-cols-2">
+      <section class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 backdrop-blur-md">
+        <h2 class="mb-4 text-sm font-semibold text-zinc-200">Active orders</h2>
+        @if (data.activeOrders.length === 0) {
+          <app-empty-state title="No active orders" detail="New purchases will track here." />
+        } @else {
+          <div class="space-y-4">
+            @for (order of data.activeOrders; track order.id) {
+              <app-dashboard-active-order [order]="order" (invoiceClicked)="openInvoice(order)" />
+            }
+          </div>
+        }
+      </section>
+
+      <section class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 backdrop-blur-md">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-zinc-200">Recent purchases</h2>
+          <a
+            routerLink="/orders"
+            class="inline-flex items-center gap-1 cursor-pointer text-xs text-indigo-400 hover:text-indigo-300"
+          >
+            <span>View all</span>
+            <svg lucideArrowRight class="h-3.5 w-3.5"></svg>
+          </a>
+        </div>
+        @if (data.recentPurchases.length === 0) {
+          <app-empty-state title="No deliveries yet" />
+        } @else {
+          <ul class="divide-y divide-zinc-800">
+            @for (order of data.recentPurchases; track order.id) {
+              <li class="flex items-center justify-between py-3 text-sm">
+                <span class="text-zinc-300">{{ order.items[0]?.productTitle }}</span>
+                <span class="text-zinc-500">{{ order.totalAmount | currency }}</span>
+              </li>
+            }
+          </ul>
+        }
+        <p class="mt-4 text-xs text-zinc-500">Wishlist: {{ data.wishlistCount }} saved items</p>
+      </section>
+    </div>
+
+    <section class="mt-6">
+      <h2 class="mb-4 text-sm font-semibold text-zinc-200">Recommended</h2>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        @for (product of data.recommended; track product.id) {
+          <app-product-card [product]="product">
+            <span
+              class="inline-flex items-center gap-1 text-xs font-medium text-indigo-400 group-hover:underline"
+            >
+              <span>View</span>
+              <svg
+                lucideArrowRight
+                class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
+              ></svg>
+            </span>
+          </app-product-card>
+        }
+      </div>
+    </section>
+  }
+
+  @if (supplier(); as data) {
+    <!-- Milestone Escrow & Cashflow Pipeline Widget -->
+    <div class="mb-6">
+      <app-escrow-pipeline-card
+        [data]="data.escrowPipeline"
+        title="Supplier Milestone Receivables & Liquidity Pipeline"
+        subtitle="Track incoming cashflows released upon production kickoff, customs checkpoint scans, and delivery acceptance."
+      />
+    </div>
+
+    <!-- Supplier SLA & Performance Scorecard -->
+    <div class="mb-6">
+      <app-supplier-sla-card
+        [scorecard]="data.slaScorecard"
+        title="Store SLA & Operational Fulfillment Scorecard"
+        subtitle="Real-time compliance tracking based on customs dispatch timeliness and inspection acceptance."
+      />
+    </div>
+
+    <!-- Executive Charts Row 1: GMV Trend & Order Pipeline -->
+    <div class="mb-6 grid gap-6 lg:grid-cols-3">
+      <div class="lg:col-span-2">
+        <app-revenue-chart [trend]="data.trend" title="Gross Merchandise Value (GMV) Trend" />
+      </div>
+      <div>
+        <app-fulfillment-donut [pipeline]="data.pipeline" title="Order Pipeline Status" />
+      </div>
+    </div>
+
+    <!-- Executive Charts Row 2: Category Distribution & RFQ Trade Funnel -->
+    <div class="mb-6 grid gap-6 lg:grid-cols-2">
+      <app-category-bar [distribution]="data.categoryDistribution" title="Revenue by Category" />
+      <app-rfq-funnel [funnel]="data.rfqFunnel" />
+    </div>
+
+    <!-- Inventory & Top SKUs Tracking -->
+    <div class="grid gap-6 xl:grid-cols-2">
+      <section class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5">
+        <h2 class="mb-4 text-sm font-semibold">Low-stock alerts</h2>
+        @if (data.lowStock.length === 0) {
+          <app-empty-state title="Inventory looks healthy" />
+        } @else {
+          <ul class="space-y-2">
+            @for (sku of data.lowStock; track sku.id) {
+              <li
+                class="flex items-center justify-between rounded-xl bg-zinc-950/50 px-3 py-2 text-sm"
+              >
+                <span>{{ sku.title }}</span>
+                <span class="text-amber-400">{{ sku.stockQuantity }} left</span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+      <section class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5">
+        <h2 class="mb-4 text-sm font-semibold">Top-performing SKUs</h2>
+        <ul class="space-y-2">
+          @for (row of data.topSkus; track row.product.id) {
+            <li class="flex items-center justify-between text-sm">
+              <span class="text-zinc-300">{{ row.product.title }}</span>
+              <span class="text-emerald-400">{{ row.revenue | currency }} · {{ row.units }} u</span>
+            </li>
+          } @empty {
+            <app-empty-state title="No sales yet" />
+          }
+        </ul>
+      </section>
+    </div>
+
+    <!-- Fulfillment Queue Table -->
+    <section class="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5">
+      <h2 class="mb-4 text-sm font-semibold">Fulfillment queue</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="text-xs uppercase text-zinc-500">
+            <tr>
+              <th class="pb-2">SKU</th>
+              <th class="pb-2">Qty</th>
+              <th class="pb-2">Status</th>
+              <th class="pb-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of data.fulfillment; track item.id) {
+              <tr class="border-t border-zinc-800">
+                <td class="py-3">{{ item.productTitle }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>
+                  <app-badge [tone]="statusTone(item.status)">{{
+                    item.status | labelFormat
+                  }}</app-badge>
+                </td>
+                <td class="text-right">
+                  @if (item.status === OrderStatuses.PENDING) {
+                    <button
+                      class="text-indigo-400 hover:text-indigo-300"
+                      type="button"
+                      (click)="accept(item.id)"
+                    >
+                      Accept
+                    </button>
+                  } @else if (item.status === OrderStatuses.PROCESSING) {
+                    <button
+                      class="text-indigo-400 hover:text-indigo-300"
+                      type="button"
+                      (click)="ship(item.id)"
+                    >
+                      Ship
+                    </button>
+                  } @else if (item.status === OrderStatuses.SHIPPED) {
+                    <button
+                      class="text-indigo-400 hover:text-indigo-300"
+                      type="button"
+                      (click)="outForDelivery(item.id)"
+                    >
+                      Out for Delivery
+                    </button>
+                  } @else if (item.status === OrderStatuses.OUT_FOR_DELIVERY) {
+                    <button
+                      class="text-emerald-400 hover:text-emerald-300"
+                      type="button"
+                      (click)="deliver(item.id)"
+                    >
+                      Mark Delivered
+                    </button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="py-6 text-zinc-500">Queue is clear</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  @if (subadmin(); as data) {
+    <section class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5">
+      <h2 class="mb-4 text-sm font-semibold">Moderation queue</h2>
+      <div class="space-y-3">
+        @for (product of data.pendingProducts; track product.id) {
+          <article
+            class="flex flex-wrap items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-950/50 p-4"
+          >
+            <img
+              class="h-16 w-16 rounded-lg object-cover"
+              [src]="product.images[0]?.url"
+              [alt]="product.title"
+            />
+            <div class="min-w-0 flex-1">
+              <p class="font-medium">{{ product.title }}</p>
+              <p class="text-xs text-zinc-500">
+                {{ product.storeName }} · {{ product.price | currency }}
+              </p>
+            </div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="rounded-lg bg-emerald-500/15 px-3 py-1.5 text-sm text-emerald-300 hover:bg-emerald-500/25"
+                (click)="moderate(product.id, ProductStatuses.APPROVED)"
+              >
+                Approve
+              </button>
+              <button
+                type="button"
+                class="rounded-lg bg-rose-500/15 px-3 py-1.5 text-sm text-rose-300 hover:bg-rose-500/25"
+                (click)="moderate(product.id, ProductStatuses.REJECTED)"
+              >
+                Reject
+              </button>
+            </div>
+          </article>
+        } @empty {
+          <app-empty-state title="No pending submissions" />
+        }
+      </div>
+    </section>
+    <section class="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5">
+      <h2 class="mb-4 text-sm font-semibold">Dispute flags</h2>
+      <ul class="space-y-3">
+        @for (ticket of data.tickets; track ticket.id) {
+          <li class="rounded-xl border border-zinc-800 p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="font-medium">{{ ticket.subject }}</p>
+                <p class="mt-1 text-sm text-zinc-400">{{ ticket.body }}</p>
+              </div>
+              <app-badge [tone]="statusTone(ticket.status)">{{
+                ticket.status | labelFormat
+              }}</app-badge>
+            </div>
+            @if (
+              ticket.status !== TicketStatuses.RESOLVED && ticket.status !== TicketStatuses.CLOSED
+            ) {
+              <button
+                type="button"
+                class="mt-3 text-sm text-indigo-400"
+                (click)="resolveTicket(ticket.id, TicketStatuses.RESOLVED)"
+              >
+                Mark resolved
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (admin(); as data) {
+    <!-- Marketplace Escrow Custody & Cashflow Pipeline -->
+    <div class="mb-6">
+      <app-escrow-pipeline-card
+        [data]="data.escrowPipeline"
+        title="Marketplace Escrow Custody & Liquidity Forecast"
+        subtitle="Platform-wide active escrow float, staged milestone reserves, and scheduled payout velocity."
+      />
+    </div>
+
+    <!-- Marketplace Supplier SLA & Compliance Scorecard -->
+    <div class="mb-6">
+      <app-supplier-sla-card
+        [scorecard]="data.slaScorecard"
+        title="Marketplace Supplier SLA & Delivery Reliability"
+        subtitle="Aggregate cross-vendor fulfillment velocity, customs dispatch SLA adherence, and dispute-free inspection rates."
+      />
+    </div>
+
+    <!-- Admin Platform Charts -->
+    <div class="mb-6 grid gap-6 lg:grid-cols-3">
+      <div class="lg:col-span-2">
+        <app-revenue-chart [trend]="data.trend" title="Marketplace GMV & Platform Velocity" />
+      </div>
+      <div>
+        <app-fulfillment-donut [pipeline]="data.pipeline" title="Marketplace Order Pipeline" />
+      </div>
+    </div>
+
+    <div class="mb-6 grid gap-6 lg:grid-cols-2">
+      <app-category-bar
+        [distribution]="data.categoryDistribution"
+        title="Volume by Product Category"
+      />
+      <app-rfq-funnel [funnel]="data.rfqFunnel" />
+    </div>
+
+    <!-- Vendor Commissions -->
+    <section class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5">
+      <h2 class="mb-4 text-sm font-semibold">Vendor commissions</h2>
+      <table class="w-full text-left text-sm">
+        <thead class="text-xs uppercase text-zinc-500">
+          <tr>
+            <th class="pb-2">Store</th>
+            <th class="pb-2">Rate</th>
+            <th class="pb-2">GMV</th>
+            <th class="pb-2">Fee</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of data.vendorCommissions; track row.storeName) {
+            <tr class="border-t border-zinc-800">
+              <td class="py-3">{{ row.storeName }}</td>
+              <td>{{ row.rate }}%</td>
+              <td>{{ row.gmv | currency }}</td>
+              <td class="text-emerald-400">{{ row.fee | currency }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+
+  }
+
+  @if (admin() || subadmin()) {
+    <!-- Full-featured AI Campaign Analytics & Intelligence Dashboard -->
+    <app-campaign-analytics-card
+      [analyticsData]="analytics()"
+      (refreshRequested)="fetchAnalytics()"
+    />
+  }
+}
+
+<app-invoice-modal
+  [open]="invoiceModalOpen()"
+  [invoice]="selectedInvoice()"
+  (closed)="invoiceModalOpen.set(false)"
+/>
+
