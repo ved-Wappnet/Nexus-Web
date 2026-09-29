@@ -46,6 +46,24 @@ export interface ChatbotApiResponse {
   };
 }
 
+export interface FaqItem {
+  question: string;
+  answer: string;
+  link?: string;
+}
+
+export interface FaqCategory {
+  id: string;
+  title: string;
+  summary: string;
+  faqs: FaqItem[];
+}
+
+export interface FaqResponse {
+  knowledgeBase: string;
+  categories: FaqCategory[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -53,6 +71,7 @@ export class ChatbotService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiUrl}/chatbot/chat`;
   private readonly streamUrl = `${environment.apiUrl}/chatbot/chat/stream`;
+  private readonly faqsUrl = `${environment.apiUrl}/chatbot/faqs`;
 
   private readonly STORAGE_KEY = 'nexus_chat_history';
   private readonly SESSIONS_KEY = 'nexus_chat_sessions';
@@ -62,6 +81,21 @@ export class ChatbotService {
   readonly isThinking = signal<boolean>(false);
   readonly isOpen = signal<boolean>(false);
   readonly isTypewriterEnabled = signal<boolean>(this.loadTypewriterPreference());
+  readonly faqs = signal<FaqCategory[]>([]);
+  readonly knowledgeBase = signal<string>('');
+
+  loadFaqs(): Observable<FaqResponse> {
+    return this.http.get<FaqResponse>(this.faqsUrl).pipe(
+      tap((res) => {
+        if (res?.categories) {
+          this.faqs.set(res.categories);
+        }
+        if (res?.knowledgeBase) {
+          this.knowledgeBase.set(res.knowledgeBase);
+        }
+      })
+    );
+  }
 
   private loadTypewriterPreference(): boolean {
     try {
