@@ -15,7 +15,6 @@ import {
   LucideCopy,
   LucideDownload,
   LucideFileText,
-  LucideHelpCircle,
   LucideHistory,
   LucideLifeBuoy,
   LucideLoader2,
@@ -93,7 +92,6 @@ import { Select, SelectOption } from '../select/select';
     LucideThumbsUp,
     LucideThumbsDown,
     LucideBookOpen,
-    LucideHelpCircle,
     Select,
   ],
   template: `
