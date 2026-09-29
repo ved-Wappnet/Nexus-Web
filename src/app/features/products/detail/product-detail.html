@@ -1,0 +1,673 @@
+@if (missing()) {
+  <div class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8 text-center">
+    <p class="text-base text-zinc-400">This product is not visible for your role, or it does not exist.</p>
+    <button
+      type="button"
+      (click)="goBack()"
+      class="mt-4 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 transition cursor-pointer"
+    >
+      <svg lucideArrowLeft class="h-4 w-4"></svg>
+      <span>Return to Catalog</span>
+    </button>
+  </div>
+} @else if (product(); as p) {
+  <div class="mb-5 flex items-center justify-between">
+    <button
+      type="button"
+      (click)="goBack()"
+      class="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/90 px-4 py-2.5 text-sm font-semibold text-zinc-200 hover:border-zinc-700 hover:text-white transition-all cursor-pointer shadow-md"
+    >
+      <svg lucideArrowLeft class="h-4 w-4 text-indigo-400"></svg>
+      <span>Back to Catalog</span>
+    </button>
+
+    <div class="flex items-center gap-2.5 flex-wrap">
+      <!-- Rating Summary Pill (Click to jump to reviews) -->
+      @if (reviewSummary(); as summary) {
+        <button
+          type="button"
+          (click)="scrollToReviews()"
+          class="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 hover:border-amber-500/40 transition cursor-pointer shadow-sm"
+          title="Jump to Customer Reviews"
+        >
+          <svg lucideStar class="h-3.5 w-3.5 fill-amber-400 text-amber-400"></svg>
+          <span>{{ summary.totalReviews > 0 ? (summary.averageRating | number: '1.1-1') : 'New' }}</span>
+          <span class="text-amber-300/60 font-normal">({{ summary.totalReviews }} reviews)</span>
+        </button>
+      }
+
+      <app-badge tone="indigo">{{ p.storeName }}</app-badge>
+      <app-live-stock-badge [stockQuantity]="p.stockQuantity" [categoryName]="p.categoryName" [compact]="true" />
+    </div>
+  </div>
+
+  <div class="grid gap-8 lg:grid-cols-12">
+    <!-- Left Column: Gallery Display -->
+    <div class="lg:col-span-5 space-y-4">
+      <div class="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/90 p-2 shadow-2xl backdrop-blur-md">
+        <img
+          class="h-[28rem] w-full rounded-2xl object-cover transition-all duration-300 hover:scale-105"
+          [src]="displayImage()"
+          [alt]="p.title"
+        />
+      </div>
+
+      <!-- Thumbnail Strip if multiple images exist -->
+      @if (p.images.length > 1) {
+        <div class="flex items-center gap-3 overflow-x-auto pb-1">
+          @for (img of p.images; track img.url) {
+            <button
+              type="button"
+              (click)="selectImage(img.url)"
+              class="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 transition cursor-pointer"
+              [class]="displayImage() === img.url ? 'border-indigo-500 ring-2 ring-indigo-500/30' : 'border-zinc-800 opacity-70 hover:opacity-100'"
+            >
+              <img [src]="img.url" [alt]="p.title" class="h-full w-full object-cover" />
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Right Column: Details & Actions -->
+    <div class="lg:col-span-7 flex flex-col justify-between space-y-6">
+      <div>
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-100">{{ p.title }}</h1>
+        <p class="mt-4 text-base sm:text-lg leading-relaxed text-zinc-300">{{ p.description }}</p>
+
+        <!-- Price Breakdown Container -->
+        <div class="mt-6 flex flex-wrap items-baseline gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5">
+          <p class="text-3xl sm:text-4xl font-extrabold text-zinc-100 font-mono">{{ p.price | nexusCurrency }}</p>
+          <span class="text-sm text-zinc-400 font-medium">per unit</span>
+          <div class="ml-auto flex items-center gap-2">
+            <app-live-stock-badge [stockQuantity]="p.stockQuantity" [categoryName]="p.categoryName" [compact]="false" />
+          </div>
+        </div>
+
+        <!-- Quantity & Purchase Options -->
+        <div class="mt-6 space-y-5">
+          @if (canBuy()) {
+            <div class="flex items-center gap-4">
+              <span class="text-sm font-bold uppercase tracking-wider text-zinc-300">Quantity</span>
+
+              <!-- Stepper Control -->
+              <div class="flex items-center rounded-xl border border-zinc-800 bg-zinc-950 p-1 shadow-inner">
+                <button
+                  type="button"
+                  (click)="decrementQuantity()"
+                  [disabled]="quantity() <= 1"
+                  class="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-zinc-200 hover:bg-zinc-800 disabled:opacity-40 transition cursor-pointer"
+                >
+                  <svg lucideMinus class="h-4 w-4"></svg>
+                </button>
+
+                <input
+                  type="number"
+                  min="1"
+                  [max]="p.stockQuantity"
+                  class="w-14 text-center text-base font-bold text-zinc-100 bg-transparent outline-none"
+                  [value]="quantity()"
+                  (input)="setQuantity($any($event.target).value)"
+                />
+
+                <button
+                  type="button"
+                  (click)="incrementQuantity()"
+                  [disabled]="quantity() >= p.stockQuantity"
+                  class="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-zinc-200 hover:bg-zinc-800 disabled:opacity-40 transition cursor-pointer"
+                >
+                  <svg lucidePlus class="h-4 w-4"></svg>
+                </button>
+              </div>
+
+              @if (inCart()) {
+                <span class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-300">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                  In Cart ({{ cartQuantity() }})
+                </span>
+              }
+
+              <span class="text-sm text-zinc-400">Max {{ p.stockQuantity }} in stock</span>
+            </div>
+
+            <!-- Action Button Grid -->
+            <div class="flex flex-wrap items-center gap-3 pt-2">
+              @if (auth.role() === UserRoles.CUSTOMER) {
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm sm:text-base font-bold text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-500 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  [disabled]="buying() || !canBuy()"
+                  (click)="buyNow()"
+                >
+                  @if (buying()) {
+                    <svg class="h-4 w-4 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Redirecting to Payment…</span>
+                  } @else {
+                    <svg lucideCreditCard class="h-4 w-4"></svg>
+                    <span>Buy Now · {{ lineTotal() | nexusCurrency }}</span>
+                  }
+                </button>
+
+                <button
+                  type="button"
+                  [disabled]="!canBuy()"
+                  class="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800/90 px-6 py-3 text-sm sm:text-base font-bold text-zinc-100 hover:border-indigo-500/50 hover:bg-zinc-800 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  (click)="addToCart()"
+                >
+                  <svg lucideShoppingBag class="h-4 w-4 text-indigo-400"></svg>
+                  <span>{{ inCart() ? 'Update Cart (' + quantity() + ')' : 'Add to Cart' }}</span>
+                </button>
+              } @else if (auth.role()) {
+                <div class="inline-flex items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-3 text-sm text-indigo-300 font-medium">
+                  <svg lucideShieldCheck class="h-4 w-4 text-indigo-400"></svg>
+                  <span>Management View ({{ auth.role() }}) · Direct purchasing restricted to Customer accounts</span>
+                </div>
+              }
+
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-950/50 px-6 py-3 text-sm sm:text-base font-bold text-indigo-300 hover:bg-indigo-600 hover:text-white transition cursor-pointer"
+                (click)="rfqService.openModal(p)"
+              >
+                <svg lucideBuilding2 class="h-4 w-4 text-indigo-400"></svg>
+                <span>Request Wholesale RFQ</span>
+              </button>
+
+              <button
+                type="button"
+                [disabled]="savingWishlist()"
+                class="inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                [class]="
+                  isWishlisted()
+                    ? 'border-rose-500/40 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20'
+                    : 'border-zinc-800 bg-zinc-900 text-zinc-200 hover:border-zinc-700 hover:text-white'
+                "
+                (click)="save()"
+              >
+                @if (savingWishlist()) {
+                  <svg class="h-4 w-4 animate-spin text-rose-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Updating…</span>
+                } @else {
+                  <svg
+                    lucideHeart
+                    class="h-4 w-4 text-rose-400"
+                    [class.fill-rose-400]="isWishlisted()"
+                  ></svg>
+                  <span>Wishlist</span>
+                }
+              </button>
+
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold transition cursor-pointer"
+                [class]="
+                  compare.isInCompare(p.id)
+                    ? 'border-indigo-500/50 bg-indigo-600/20 text-indigo-300'
+                    : 'border-zinc-800 bg-zinc-900 text-zinc-200 hover:border-zinc-700 hover:text-white'
+                "
+                (click)="toggleCompare()"
+              >
+                @if (compare.isInCompare(p.id)) {
+                  <svg lucideCheck class="h-4 w-4 text-emerald-400"></svg>
+                  <span>Comparing</span>
+                } @else {
+                  <svg lucideColumns3 class="h-4 w-4 text-indigo-400"></svg>
+                  <span>Compare</span>
+                }
+              </button>
+            </div>
+          } @else if (p.status !== ProductStatuses.APPROVED) {
+            <div class="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-300">
+              <p class="text-base font-semibold">Not Available Yet</p>
+              <p class="text-sm text-amber-300/80 mt-1">This product is pending vendor review or approval.</p>
+            </div>
+          } @else if (p.stockQuantity <= 0) {
+            <div class="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-rose-300">
+              <p class="text-base font-semibold">Currently Out of Stock</p>
+              <p class="text-sm text-rose-300/80 mt-1">Save to your wishlist to get notified when restocked.</p>
+            </div>
+          }
+
+          <!-- Watch Price Button for Vendor / Supplier Roles -->
+          @if (auth.role() && auth.role() !== UserRoles.CUSTOMER) {
+            <div class="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold transition cursor-pointer"
+                [class]="
+                  priceAlert.hasAlert(p.id)
+                    ? 'border-indigo-500/50 bg-indigo-600/20 text-indigo-300'
+                    : 'border-zinc-700 text-zinc-200 hover:border-zinc-600 hover:bg-zinc-900'
+                "
+                (click)="priceAlert.openModal(p)"
+              >
+                <svg lucideTrendingDown class="h-4 w-4 text-indigo-400"></svg>
+                <span>{{ priceAlert.hasAlert(p.id) ? 'Watching Price' : 'Watch Price Drops' }}</span>
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Trust Badges & Guarantee Strip -->
+      <div class="grid grid-cols-3 gap-3 rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-4 text-sm text-zinc-300">
+        <div class="flex items-center gap-3">
+          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 text-indigo-400">
+            <svg lucideLock class="h-4 w-4"></svg>
+          </div>
+          <div>
+            <p class="font-bold text-zinc-100 text-xs sm:text-sm">256-bit Security</p>
+            <p class="text-zinc-400 text-xs">Stripe Checkout</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 text-emerald-400">
+            <svg lucideTruck class="h-4 w-4"></svg>
+          </div>
+          <div>
+            <p class="font-bold text-zinc-100 text-xs sm:text-sm">Fast Logistics</p>
+            <p class="text-zinc-400 text-xs">Express Tracked</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 text-indigo-400">
+            <svg lucideShieldCheck class="h-4 w-4"></svg>
+          </div>
+          <div>
+            <p class="font-bold text-zinc-100 text-xs sm:text-sm">Nexus Guaranteed</p>
+            <p class="text-zinc-400 text-xs">Buyer Protected</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Technical Specifications Section -->
+      @if (attrs().length) {
+        <div>
+          <h3 class="text-sm font-bold uppercase tracking-wider text-zinc-300 mb-3">Product Specifications</h3>
+          <dl class="grid grid-cols-2 gap-3 text-sm">
+            @for (pair of attrs(); track pair[0]) {
+              <div class="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-3.5 transition hover:border-zinc-700">
+                <dt class="font-bold uppercase tracking-wide text-zinc-400 text-xs">{{ pair[0] | labelFormat }}</dt>
+                <dd class="mt-1 font-semibold text-zinc-100 text-sm sm:text-base">{{ pair[1] }}</dd>
+              </div>
+            }
+          </dl>
+        </div>
+      }
+
+      <!-- Vendor Trust Score Card (Dynamic Marketplace Rating) -->
+      @if (supplierTrust(); as trust) {
+        <div class="rounded-2xl border border-zinc-800/90 bg-zinc-900/60 p-4 space-y-3 shadow-inner">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400">
+                <svg lucideBuilding2 class="h-5 w-5"></svg>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-sm font-bold text-zinc-100 truncate">{{ trust.storeName }}</span>
+                  <svg lucideShieldCheck class="h-4 w-4 text-emerald-400 shrink-0" title="Verified Nexus Vendor"></svg>
+                </div>
+                <p class="text-xs text-zinc-400">Marketplace Vendor · Member since {{ trust.verifiedSince }}</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300 shrink-0">
+              <svg lucideAward class="h-3.5 w-3.5 text-emerald-400"></svg>
+              <span>{{ trust.trustScore }}% Trust Score</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-zinc-800/60 text-center">
+            <div class="rounded-xl bg-zinc-950/60 border border-zinc-800/50 p-2">
+              <p class="text-[11px] font-medium text-zinc-400">Vendor Rating</p>
+              <p class="text-sm font-bold text-amber-300 font-mono mt-0.5">★ {{ trust.rating | number: '1.1-1' }}</p>
+            </div>
+            <div class="rounded-xl bg-zinc-950/60 border border-zinc-800/50 p-2">
+              <p class="text-[11px] font-medium text-zinc-400">Fulfillment</p>
+              <p class="text-sm font-bold text-emerald-400 font-mono mt-0.5">{{ trust.fulfillmentRate }}%</p>
+            </div>
+            <div class="rounded-xl bg-zinc-950/60 border border-zinc-800/50 p-2">
+              <p class="text-[11px] font-medium text-zinc-400">Badge Tier</p>
+              <p class="text-xs font-semibold text-indigo-300 truncate mt-1">{{ trust.badgeLabel }}</p>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Interactive 360° Product Studio with "X-Ray" Spec Hotspots (Dedicated 3D Model Section) -->
+  <app-product-360-studio [product]="p" />
+
+  <!-- Product Reviews & Ratings Section (Option 3 Feature) -->
+  <div id="reviews-section" class="mt-12 rounded-3xl border border-zinc-800 bg-zinc-950/70 p-6 sm:p-8 space-y-8 backdrop-blur-md shadow-2xl">
+    <!-- Section Title & CTA -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800/80 pb-6">
+      <div class="flex items-center gap-3">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-400/10 text-amber-400 border border-amber-400/20 shadow-sm">
+          <svg lucideStar class="h-6 w-6 fill-amber-400"></svg>
+        </div>
+        <div>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-zinc-100 tracking-tight">Customer Reviews & Verified Ratings</h2>
+          <p class="text-xs sm:text-sm text-zinc-400">Real feedback from verified buyers and community members</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        (click)="openReviewModal()"
+        class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-500 active:scale-95 transition cursor-pointer self-start sm:self-center"
+      >
+        <svg lucideSparkles class="h-4 w-4"></svg>
+        <span>{{ reviewSummary()?.userReview ? 'Edit Your Review' : 'Write a Customer Review' }}</span>
+      </button>
+    </div>
+
+    <!-- Rating Summary Dashboard (Amazon / G2 style breakdown) -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center rounded-2xl border border-zinc-800/80 bg-zinc-900/60 p-6 shadow-inner">
+      <!-- Big Score Column -->
+      <div class="md:col-span-4 text-center md:text-left border-b md:border-b-0 md:border-r border-zinc-800/80 pb-6 md:pb-0 md:pr-6">
+        <div class="flex items-baseline justify-center md:justify-start gap-2">
+          <span class="text-5xl sm:text-6xl font-black text-zinc-100 font-mono tracking-tight">
+            {{ (reviewSummary()?.averageRating || 0) | number: '1.1-1' }}
+          </span>
+          <span class="text-sm font-medium text-zinc-500">out of 5</span>
+        </div>
+
+        <div class="mt-2 flex justify-center md:justify-start">
+          <app-star-rating [rating]="reviewSummary()?.averageRating || 0" size="md" />
+        </div>
+
+        <p class="mt-2 text-xs text-zinc-400 font-medium">
+          Based on {{ reviewSummary()?.totalReviews || 0 }} customer rating(s)
+        </p>
+
+        @if ((reviewSummary()?.totalReviews || 0) > 0) {
+          <div class="mt-3.5 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+            <svg lucideThumbsUp class="h-3.5 w-3.5 text-emerald-400"></svg>
+            <span>{{ reviewSummary()?.recommendedPercent }}% of buyers recommend</span>
+          </div>
+        }
+      </div>
+
+      <!-- 5★ to 1★ Distribution Bars Column -->
+      <div class="md:col-span-5 space-y-2.5">
+        @for (item of (reviewSummary()?.breakdown || []); track item.star) {
+          <button
+            type="button"
+            (click)="setRatingFilter(item.star)"
+            title="Filter by {{ item.star }} star reviews"
+            class="group flex w-full items-center gap-3 text-xs text-zinc-300 hover:text-white transition cursor-pointer p-1 rounded-lg hover:bg-zinc-800/40"
+            [class.bg-zinc-800]="selectedRatingFilter() === item.star"
+            [class.text-amber-300]="selectedRatingFilter() === item.star"
+          >
+            <span class="w-12 text-left font-semibold whitespace-nowrap">{{ item.star }} star</span>
+            <div class="relative h-2.5 flex-1 overflow-hidden rounded-full bg-zinc-800 shadow-inner">
+              <div
+                class="h-full rounded-full transition-all duration-300"
+                [class]="selectedRatingFilter() === item.star ? 'bg-amber-400 ring-2 ring-amber-400/40' : 'bg-amber-400/80 group-hover:bg-amber-400'"
+                [style.width.%]="item.percentage"
+              ></div>
+            </div>
+            <span class="w-10 text-right font-mono text-[11px] text-zinc-400">{{ item.percentage }}%</span>
+            <span class="w-8 text-right font-mono text-[11px] text-zinc-500">({{ item.count }})</span>
+          </button>
+        }
+      </div>
+
+      <!-- Review CTA Box -->
+      <div class="md:col-span-3 border-t md:border-t-0 md:border-l border-zinc-800/80 pt-6 md:pt-0 md:pl-6 text-center space-y-2.5">
+        <h3 class="text-sm font-bold text-zinc-100">Review This Product</h3>
+        <p class="text-xs text-zinc-400 leading-relaxed">
+          Help fellow buyers make confident, informed purchases.
+        </p>
+        <button
+          type="button"
+          (click)="openReviewModal()"
+          class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-950/60 px-4 py-2.5 text-xs font-bold text-indigo-300 hover:bg-indigo-600 hover:text-white transition cursor-pointer shadow-sm"
+        >
+          <svg lucideMessageSquare class="h-3.5 w-3.5"></svg>
+          <span>{{ reviewSummary()?.userReview ? 'Update My Review' : 'Write a Review' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Review Filter & Search Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-semibold text-zinc-400 flex items-center gap-1 mr-1">
+          <svg lucideFilter class="h-3.5 w-3.5 text-zinc-500"></svg>
+          Filter:
+        </span>
+
+        <!-- All Tab -->
+        <button
+          type="button"
+          (click)="setRatingFilter(null)"
+          class="rounded-xl px-3 py-1.5 text-xs font-semibold transition cursor-pointer border"
+          [class]="selectedRatingFilter() === null && !verifiedOnlyFilter()
+            ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'"
+        >
+          All ({{ reviewSummary()?.totalReviews || 0 }})
+        </button>
+
+        <!-- Star Tabs (5, 4, 3, 2, 1) -->
+        @for (star of [5, 4, 3, 2, 1]; track star) {
+          <button
+            type="button"
+            (click)="setRatingFilter(star)"
+            class="rounded-xl px-2.5 py-1.5 text-xs font-semibold transition cursor-pointer border inline-flex items-center gap-1"
+            [class]="selectedRatingFilter() === star
+              ? 'bg-amber-500 text-black border-amber-400 font-bold shadow-sm'
+              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-amber-300 hover:border-zinc-700'"
+          >
+            <span>{{ star }}</span>
+            <svg lucideStar class="h-3 w-3 fill-current"></svg>
+          </button>
+        }
+
+        <!-- Verified Buyers Only Toggle -->
+        <button
+          type="button"
+          (click)="toggleVerifiedFilter()"
+          class="rounded-xl px-3 py-1.5 text-xs font-semibold transition cursor-pointer border inline-flex items-center gap-1.5"
+          [class]="verifiedOnlyFilter()
+            ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-emerald-300 hover:border-zinc-700'"
+        >
+          <svg lucideShieldCheck class="h-3.5 w-3.5"></svg>
+          <span>Verified Buyers Only</span>
+        </button>
+      </div>
+
+      @if (selectedRatingFilter() !== null || verifiedOnlyFilter()) {
+        <button
+          type="button"
+          (click)="clearFilters()"
+          class="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition cursor-pointer"
+        >
+          Reset Filters
+        </button>
+      }
+    </div>
+
+    <!-- AI Review Summary -->
+    @if (aiReviewLoading()) {
+      <div class="rounded-xl border border-indigo-500/20 bg-indigo-900/10 p-4 sm:p-5">
+        <div class="flex items-center gap-2 text-indigo-400 mb-2">
+          <svg lucideSparkles class="h-4 w-4 animate-pulse"></svg>
+          <span class="text-xs font-bold uppercase tracking-wider">Nexus AI Analyst</span>
+        </div>
+        <div class="animate-pulse space-y-2">
+          <div class="h-2 w-3/4 rounded bg-indigo-900/30"></div>
+          <div class="h-2 w-1/2 rounded bg-indigo-900/30"></div>
+        </div>
+      </div>
+    } @else if (aiReviewSummary()) {
+      <div class="rounded-xl border border-indigo-500/30 bg-indigo-900/10 p-4 sm:p-5 relative overflow-hidden group">
+        <div class="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-indigo-600/10 blur-3xl group-hover:bg-indigo-600/20 transition-all duration-700 pointer-events-none"></div>
+        <div class="relative z-10 space-y-3">
+          <div class="flex items-center gap-2 text-indigo-400">
+            <svg lucideSparkles class="h-4 w-4"></svg>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-300">Nexus AI Review Summary</span>
+          </div>
+          <div class="prose prose-invert prose-sm max-w-none text-zinc-300 whitespace-pre-line leading-relaxed">
+            {{ aiReviewSummary() }}
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Reviews List Stream -->
+    @if (reviewsLoading()) {
+      <div class="py-12 text-center">
+        <app-loader label="Loading reviews…" />
+      </div>
+    } @else if (reviews().length > 0) {
+      <div class="space-y-4">
+        @for (rev of reviews(); track rev.id) {
+          <div class="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-5 sm:p-6 space-y-3 transition hover:border-zinc-700">
+            <!-- Review Card Header -->
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-indigo-800 text-white font-bold text-xs shadow-sm border border-indigo-400/30">
+                  {{ getReviewerInitials(rev.userName) }}
+                </div>
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-sm font-bold text-zinc-200">{{ rev.userName }}</span>
+                    @if (rev.userRole !== 'CUSTOMER') {
+                      <span class="rounded bg-indigo-500/20 px-1.5 py-0.2 text-[10px] font-semibold text-indigo-300 border border-indigo-500/30 uppercase">
+                        {{ rev.userRole }}
+                      </span>
+                    }
+                  </div>
+                  <span class="text-[11px] text-zinc-500 font-mono">
+                    Reviewed on {{ rev.createdAt | date: 'mediumDate' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Verified Buyer Badge -->
+              <div class="flex items-center gap-2 shrink-0">
+                @if (rev.isVerifiedBuyer) {
+                  <span class="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-400 shadow-sm">
+                    <svg lucideShieldCheck class="h-3.5 w-3.5"></svg>
+                    <span>Verified Buyer</span>
+                  </span>
+                }
+              </div>
+            </div>
+
+            <!-- Star Rating Display & Title -->
+            <div class="space-y-1">
+              <app-star-rating [rating]="rev.rating" size="sm" />
+              @if (rev.title) {
+                <h4 class="text-sm sm:text-base font-bold text-zinc-100 tracking-tight pt-1">
+                  {{ rev.title }}
+                </h4>
+              }
+            </div>
+
+            <!-- Review Commentary Text -->
+            <p class="text-xs sm:text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+              {{ rev.comment }}
+            </p>
+          </div>
+        }
+      </div>
+    } @else {
+      <!-- Empty State -->
+      <div class="rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/30 py-12 px-6 text-center space-y-3">
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-800 text-zinc-400 mx-auto">
+          <svg lucideStar class="h-6 w-6 text-zinc-500"></svg>
+        </div>
+        <div class="space-y-1">
+          <p class="text-base font-bold text-zinc-200">No Reviews Found</p>
+          <p class="text-xs sm:text-sm text-zinc-400 max-w-sm mx-auto">
+            {{ selectedRatingFilter() || verifiedOnlyFilter() ? 'No reviews match your selected filter.' : 'Be the first verified customer to share feedback for this product!' }}
+          </p>
+        </div>
+
+        <div class="pt-2">
+          @if (selectedRatingFilter() || verifiedOnlyFilter()) {
+            <button
+              type="button"
+              (click)="clearFilters()"
+              class="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 transition cursor-pointer"
+            >
+              Clear Filters
+            </button>
+          } @else {
+            <button
+              type="button"
+              (click)="openReviewModal()"
+              class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-500 transition cursor-pointer"
+            >
+              <svg lucideSparkles class="h-4 w-4"></svg>
+              <span>Write the First Review</span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Similar Products Carousel -->
+  @if (similarProducts().length > 0) {
+    <div class="mt-16 space-y-4">
+      <div class="flex items-center gap-3 border-b border-zinc-800 pb-3">
+        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600/20 text-indigo-400">
+          <svg lucideSparkles class="h-4 w-4"></svg>
+        </div>
+        <h2 class="text-lg sm:text-xl font-black text-white tracking-tight">Similar Products Recommended for You</h2>
+      </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        @for (sim of similarProducts(); track sim.id) {
+          <a [routerLink]="['/products/slug', sim.slug]" class="group block overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 transition-all hover:border-indigo-500/50 hover:bg-zinc-800/80 cursor-pointer">
+            <div class="aspect-[4/3] w-full overflow-hidden rounded-xl bg-zinc-800 mb-4">
+              <img [src]="sim.images[0]?.url" [alt]="sim.title" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            </div>
+            <div class="space-y-1">
+              <h3 class="font-bold text-zinc-100 truncate group-hover:text-indigo-400 transition-colors">{{ sim.title }}</h3>
+              <p class="text-xs text-zinc-500 font-mono line-clamp-1">{{ sim.categoryName }}</p>
+              <div class="pt-2 flex items-center justify-between">
+                <span class="font-black text-lg text-white">{{ sim.price | nexusCurrency }}</span>
+                <div class="flex items-center gap-1 text-xs text-amber-400 font-bold bg-amber-400/10 px-1.5 py-0.5 rounded">
+                  <svg lucideStar class="h-3 w-3 fill-amber-400"></svg>
+                  {{ sim.averageRating || 'New' }}
+                </div>
+              </div>
+            </div>
+          </a>
+        }
+      </div>
+    </div>
+  }
+} @else {
+  <app-loader label="Loading product details…" />
+}
+
+<!-- Product Review Modal -->
+@if (product(); as currentProduct) {
+  <app-review-modal
+    [open]="reviewModalOpen()"
+    [productId]="currentProduct.id"
+    [productTitle]="currentProduct.title"
+    [existingReview]="reviewSummary()?.userReview ?? null"
+    [isVerifiedBuyer]="reviewSummary()?.isVerifiedBuyer ?? false"
+    (closed)="reviewModalOpen.set(false)"
+    (saved)="onReviewSaved($event)"
+  />
+}
+

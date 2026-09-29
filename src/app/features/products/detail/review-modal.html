@@ -1,0 +1,139 @@
+@if (open()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <!-- Backdrop -->
+    <div
+      class="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+      (click)="close()"
+    ></div>
+
+    <!-- Modal Content -->
+    <div
+      class="relative w-full max-w-lg rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/80 space-y-5 animate-in fade-in zoom-in-95 duration-200"
+    >
+      <!-- Header -->
+      <div class="flex items-start justify-between gap-4 border-b border-zinc-800/80 pb-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400/10 text-amber-400 border border-amber-400/20">
+              <svg lucideStar class="h-4 w-4 fill-amber-400"></svg>
+            </div>
+            <h2 class="text-lg font-bold text-zinc-100">
+              {{ existingReview() ? 'Edit Your Review' : 'Write a Customer Review' }}
+            </h2>
+          </div>
+          <p class="mt-1 text-xs text-zinc-400 truncate max-w-sm" [title]="productTitle()">
+            {{ productTitle() }}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          (click)="close()"
+          class="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition cursor-pointer"
+        >
+          <svg lucideX class="h-4 w-4"></svg>
+        </button>
+      </div>
+
+      <!-- Verified Purchase Alert Callout -->
+      @if (isVerifiedBuyer()) {
+        <div class="flex items-center gap-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-300">
+          <svg lucideShieldCheck class="h-4 w-4 text-emerald-400 shrink-0"></svg>
+          <div>
+            <span class="font-bold">Verified Buyer Status Confirmed:</span>
+            <span class="text-emerald-300/80 ml-1">Your review will proudly display the official Verified Buyer badge.</span>
+          </div>
+        </div>
+      }
+
+      <form (submit)="submit(); $event.preventDefault()" class="space-y-4">
+        <!-- Interactive 5-Star Rating Picker -->
+        <div class="rounded-2xl border border-zinc-800/90 bg-zinc-900/60 p-4 text-center space-y-2">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            Overall Rating
+          </label>
+          <div class="flex justify-center">
+            <app-star-rating
+              [rating]="rating()"
+              [interactive]="true"
+              size="lg"
+              (ratingChange)="onRatingChange($event)"
+            />
+          </div>
+          <p class="text-xs font-medium text-amber-300 transition-all duration-150">
+            {{ getRatingText(rating()) }}
+          </p>
+        </div>
+
+        <!-- Headline / Title -->
+        <div class="space-y-1.5">
+          <label for="reviewTitle" class="block text-xs font-semibold text-zinc-300">
+            Review Title <span class="text-zinc-500 font-normal">(Optional)</span>
+          </label>
+          <input
+            id="reviewTitle"
+            type="text"
+            [ngModel]="title()"
+            (ngModelChange)="title.set($event)"
+            name="title"
+            placeholder="Example: Excellent build quality and fast logistics!"
+            maxlength="255"
+            class="w-full rounded-xl border border-zinc-700 bg-zinc-900/80 px-3.5 py-2.5 text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans"
+          />
+        </div>
+
+        <!-- Written Review Body -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label for="reviewComment" class="block text-xs font-semibold text-zinc-300">
+              Written Review <span class="text-rose-400">*</span>
+            </label>
+            <span class="text-[11px] font-mono text-zinc-500">{{ comment().length }} / 3000</span>
+          </div>
+          <textarea
+            id="reviewComment"
+            rows="4"
+            [ngModel]="comment()"
+            (ngModelChange)="comment.set($event)"
+            name="comment"
+            placeholder="What did you like or dislike about this product? How did it perform for your use case?"
+            maxlength="3000"
+            required
+            class="w-full rounded-xl border border-zinc-700 bg-zinc-900/80 p-3 text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 leading-relaxed font-sans resize-none"
+          ></textarea>
+        </div>
+
+        <!-- Error feedback -->
+        @if (errorMsg(); as err) {
+          <div class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300 font-medium">
+            {{ err }}
+          </div>
+        }
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800/80">
+          <button
+            type="button"
+            (click)="close()"
+            class="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-xs sm:text-sm font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            [disabled]="submitting() || !comment().trim()"
+            class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-500 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            @if (submitting()) {
+              <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+              <span>Submitting…</span>
+            } @else {
+              <svg lucideCheckCircle2 class="h-4 w-4"></svg>
+              <span>{{ existingReview() ? 'Update Review' : 'Submit Review' }}</span>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

@@ -1,0 +1,953 @@
+<div class="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-indigo-500 selection:text-white">
+  <!-- 1. Top Utility Strip -->
+  <div class="border-b border-zinc-800/80 bg-zinc-900/90 text-xs sm:text-sm py-2 px-4 sm:px-6 lg:px-8 backdrop-blur-md">
+    <div class="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-2 text-zinc-300">
+      <div class="flex items-center gap-4">
+        <span class="inline-flex items-center gap-1.5 text-indigo-400 font-bold">
+          <svg lucideFlame class="h-4 w-4 text-amber-400 animate-pulse"></svg>
+          <span>FLASH SALE WEEK: Up to 40% OFF Direct Supplier Inventory</span>
+        </span>
+        <span class="hidden md:inline text-zinc-700">|</span>
+        <span class="hidden md:inline-flex items-center gap-1.5 text-zinc-300">
+          <svg lucideTruck class="h-4 w-4 text-emerald-400"></svg>
+          <span>Free Express Escrow Shipping on Orders over $500</span>
+        </span>
+      </div>
+
+      <div class="flex items-center gap-4 text-xs">
+        <a routerLink="/orders" class="inline-flex items-center gap-1 hover:text-white transition">
+          <svg lucideMapPin class="h-3.5 w-3.5 text-indigo-400"></svg>
+          <span>Track Order</span>
+        </a>
+        <span class="text-zinc-700">|</span>
+        <a routerLink="/auth" class="inline-flex items-center gap-1 hover:text-white transition">
+          <svg lucideHelpCircle class="h-3.5 w-3.5 text-zinc-400"></svg>
+          <span>Help Center</span>
+        </a>
+        <span class="text-zinc-700">|</span>
+        <span class="font-semibold text-zinc-100 bg-zinc-800 px-2 py-0.5 rounded-lg border border-zinc-700">USD ($)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Main E-Commerce Header -->
+  <header class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-xl shadow-2xl">
+    <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between gap-4 lg:gap-8">
+      
+      <!-- Brand Logo -->
+      <a routerLink="/" class="group flex items-center gap-3 shrink-0">
+        <div class="relative">
+          <div class="absolute -inset-1 rounded-xl bg-indigo-500/30 blur-sm group-hover:bg-indigo-500/50 transition"></div>
+          <img
+            src="/brand/nexus-icon-64.png"
+            alt="Nexus Market"
+            width="38"
+            height="38"
+            class="relative h-9 w-9 rounded-xl shadow-md group-hover:scale-105 transition"
+          />
+        </div>
+        <div class="flex flex-col">
+          <span class="text-xl sm:text-2xl font-black tracking-tight text-white leading-none">
+            NEXUS<span class="text-indigo-400">.</span>
+          </span>
+          <span class="text-xs font-bold text-zinc-400 tracking-widest uppercase mt-0.5">Marketplace</span>
+        </div>
+      </a>
+
+      <!-- Unified E-Commerce Search Bar & Popular Tags -->
+      <div class="hidden md:flex flex-1 max-w-2xl flex-col">
+        <form (submit)="onSearchSubmit($event)" class="relative w-full">
+          <div class="flex w-full items-center rounded-xl border border-zinc-800 bg-zinc-900 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition overflow-hidden">
+            <!-- Category Prefix Selector -->
+            <div class="relative flex items-center border-r border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-semibold text-zinc-300 shrink-0">
+              <select
+                [value]="selectedSearchCategory()"
+                (change)="selectedSearchCategory.set($any($event.target).value)"
+                class="bg-transparent text-zinc-300 font-semibold focus:outline-none cursor-pointer pr-1"
+              >
+                <option value="All Categories" class="bg-zinc-900 text-zinc-200">All Categories</option>
+                <option value="Smartphones" class="bg-zinc-900 text-zinc-200">Smartphones</option>
+                <option value="Laptops" class="bg-zinc-900 text-zinc-200">Laptops</option>
+                <option value="Audio" class="bg-zinc-900 text-zinc-200">Audio</option>
+                <option value="Smart Watches" class="bg-zinc-900 text-zinc-200">Smart Watches</option>
+              </select>
+            </div>
+
+            <!-- Search Input -->
+            <input
+              type="text"
+              placeholder="Search 52,000+ items, suppliers, or direct specs..."
+              [value]="searchInput()"
+              (input)="searchInput.set($any($event.target).value)"
+              class="w-full bg-transparent px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-400 focus:outline-none"
+            />
+
+            <!-- Submit Button -->
+            <button
+              type="submit"
+              class="flex items-center justify-center bg-indigo-600 px-5 py-2.5 text-white hover:bg-indigo-500 transition cursor-pointer shrink-0 font-semibold text-sm gap-1.5"
+              aria-label="Search"
+            >
+              <svg lucideSearch class="h-4 w-4"></svg>
+              <span class="hidden sm:inline">Search</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Popular Tags List (Wrap cleanly without scrollbars) -->
+        <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1.5 text-xs text-zinc-400">
+          <span class="font-bold text-zinc-400">Popular:</span>
+          @for (tag of popularTags; track tag) {
+            <button
+              type="button"
+              (click)="setSearchTag(tag)"
+              class="hover:text-indigo-300 transition cursor-pointer font-medium text-zinc-300"
+            >
+              {{ tag }}
+            </button>
+            <span class="text-zinc-700 last:hidden">•</span>
+          }
+        </div>
+      </div>
+
+      <!-- Right Action Controls -->
+      <div class="flex items-center gap-3 shrink-0">
+        <!-- Catalog Link Button -->
+        <a
+          routerLink="/products"
+          class="hidden sm:inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800 transition"
+        >
+          <svg lucideShoppingBag class="h-4 w-4 text-indigo-400"></svg>
+          <span>Catalog</span>
+        </a>
+
+        <!-- Auth Controls -->
+        @if (auth.isAuthenticated()) {
+          <a
+            routerLink="/dashboard"
+            class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-500 transition cursor-pointer"
+          >
+            <svg lucideUser class="h-4 w-4"></svg>
+            <span class="hidden sm:inline truncate max-w-[120px]">{{ auth.currentUser()?.name || 'Dashboard' }}</span>
+          </a>
+        } @else {
+          <a
+            routerLink="/auth"
+            class="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800 transition"
+          >
+            Sign In
+          </a>
+          <a
+            routerLink="/auth"
+            class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-indigo-500 transition cursor-pointer"
+          >
+            <span>Register Store</span>
+            <svg lucideArrowRight class="h-4 w-4"></svg>
+          </a>
+        }
+      </div>
+    </div>
+
+    <!-- 3. Category Bar Navigation & Mega Menu Trigger -->
+    <div class="border-t border-zinc-800/80 bg-zinc-950 px-4 py-2.5 sm:px-6 lg:px-8 text-sm font-medium text-zinc-300">
+      <div class="mx-auto max-w-7xl flex items-center justify-between gap-6 overflow-x-auto no-scrollbar">
+        <div class="flex items-center gap-6 whitespace-nowrap">
+          <!-- All Categories Mega Menu Button (Moved here where it belongs!) -->
+          <div class="relative">
+            <button
+              type="button"
+              (click)="isCategoryMenuOpen.set(!isCategoryMenuOpen())"
+              class="flex items-center gap-2 font-bold text-indigo-400 hover:text-indigo-300 transition cursor-pointer text-sm"
+            >
+              <svg lucideGrid class="h-4 w-4 text-indigo-400"></svg>
+              <span>All Categories</span>
+              <svg lucideChevronDown class="h-4 w-4 text-indigo-400 transition" [class.rotate-180]="isCategoryMenuOpen()"></svg>
+            </button>
+
+            <!-- Dropdown Mega Menu -->
+            @if (isCategoryMenuOpen()) {
+              <div class="absolute left-0 top-full mt-2 w-64 rounded-2xl border border-zinc-800 bg-zinc-900/95 p-2 shadow-2xl backdrop-blur-xl z-50">
+                @for (cat of megaCategories; track cat.name) {
+                  <a
+                    [routerLink]="cat.route"
+                    (click)="isCategoryMenuOpen.set(false)"
+                    class="flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-semibold text-zinc-200 hover:bg-indigo-600 hover:text-white transition"
+                  >
+                    <span>{{ cat.name }}</span>
+                    <span class="text-xs text-zinc-400 hover:text-white font-mono">{{ cat.count }}</span>
+                  </a>
+                }
+              </div>
+            }
+          </div>
+
+          <span class="text-zinc-800">|</span>
+
+          <a href="#lightning-deals" class="flex items-center gap-1.5 text-amber-400 font-bold hover:text-amber-300 transition">
+            <svg lucideFlame class="h-4 w-4 text-amber-400 animate-pulse"></svg>
+            <span>Today's Deals</span>
+          </a>
+          <a href="#categories-grid" class="hover:text-white transition">Smartphones</a>
+          <a href="#categories-grid" class="hover:text-white transition">Laptops & Workstations</a>
+          <a href="#categories-grid" class="hover:text-white transition">Audio & Sound</a>
+          <a href="#categories-grid" class="hover:text-white transition">Smart Watches</a>
+          <a href="#live-comparison" class="hover:text-white transition flex items-center gap-1.5">
+            <svg lucideSliders class="h-4 w-4 text-violet-400"></svg>
+            <span>Specification Engine</span>
+          </a>
+          <a href="#verified-suppliers" class="hover:text-white transition">Verified Manufacturers</a>
+          <a href="#trust-guarantees" class="hover:text-white transition">Buyer Escrow Guarantee</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 4. Interactive Hero Banner & Promo Grid -->
+  <section class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Multi-Slide Interactive Hero Banner (8 cols) -->
+      <div class="lg:col-span-8 relative overflow-hidden rounded-3xl border border-zinc-800 bg-gradient-to-tr from-zinc-950 via-zinc-900 to-indigo-950/70 p-6 sm:p-8 flex flex-col justify-between shadow-2xl min-h-[460px] sm:min-h-[480px]">
+        <!-- Ambient Light Orbs -->
+        <div class="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-indigo-500/15 blur-3xl"></div>
+        <div class="pointer-events-none absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-violet-500/10 blur-3xl"></div>
+
+        <!-- Absolute Stacked Slides Box (Fixed height prevents layout shift!) -->
+        <div class="relative h-[220px] sm:h-[230px]">
+          <!-- Carousel Slide 1 -->
+          <div
+            class="absolute inset-0 transition-all duration-500 flex flex-col justify-start"
+            [class]="activeHeroSlide() === 0 ? 'opacity-100 translate-y-0 pointer-events-auto z-10' : 'opacity-0 translate-y-2 pointer-events-none z-0'"
+          >
+            <div class="inline-flex items-center gap-2 self-start rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3.5 py-1 text-xs font-semibold text-indigo-300 backdrop-blur-md">
+              <svg lucideZap class="h-3.5 w-3.5 text-indigo-400"></svg>
+              <span>DIRECT MANUFACTURER NETWORK · 0% INTERMEDIARY MARKUP</span>
+            </div>
+
+            <h1 class="mt-4 max-w-2xl text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-[1.15]">
+              Next-Gen Multi-Vendor <span class="bg-gradient-to-r from-indigo-400 via-violet-300 to-amber-300 bg-clip-text text-transparent">Commerce Platform</span>
+            </h1>
+
+            <p class="mt-3.5 max-w-xl text-sm sm:text-base text-zinc-300 leading-relaxed">
+              Source directly from 450+ verified manufacturers with automated escrow protection, sub-45ms attribute normalization, and express multi-carrier fulfillment.
+            </p>
+          </div>
+
+          <!-- Carousel Slide 2 -->
+          <div
+            class="absolute inset-0 transition-all duration-500 flex flex-col justify-start"
+            [class]="activeHeroSlide() === 1 ? 'opacity-100 translate-y-0 pointer-events-auto z-10' : 'opacity-0 translate-y-2 pointer-events-none z-0'"
+          >
+            <div class="inline-flex items-center gap-2 self-start rounded-full border border-violet-500/30 bg-violet-500/10 px-3.5 py-1 text-xs font-semibold text-violet-300 backdrop-blur-md">
+              <svg lucideLaptop class="h-3.5 w-3.5 text-violet-400"></svg>
+              <span>ENTERPRISE WORKSTATION FESTIVAL</span>
+            </div>
+
+            <h1 class="mt-4 max-w-2xl text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-[1.15]">
+              Power Your Team with <span class="bg-gradient-to-r from-violet-400 via-indigo-300 to-emerald-300 bg-clip-text text-transparent">Direct M3 & Ultra Tech</span>
+            </h1>
+
+            <p class="mt-3.5 max-w-xl text-sm sm:text-base text-zinc-300 leading-relaxed">
+              Up to 40% OFF on high-performance laptops and workstations with verified factory specs, supplier certification, and multi-year warranty coverage.
+            </p>
+          </div>
+
+          <!-- Carousel Slide 3 -->
+          <div
+            class="absolute inset-0 transition-all duration-500 flex flex-col justify-start"
+            [class]="activeHeroSlide() === 2 ? 'opacity-100 translate-y-0 pointer-events-auto z-10' : 'opacity-0 translate-y-2 pointer-events-none z-0'"
+          >
+            <div class="inline-flex items-center gap-2 self-start rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold text-emerald-300 backdrop-blur-md">
+              <svg lucideShieldCheck class="h-3.5 w-3.5 text-emerald-400"></svg>
+              <span>100% BUYER ESCROW GUARANTEE</span>
+            </div>
+
+            <h1 class="mt-4 max-w-2xl text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-[1.15]">
+              Escrow Safeguarded <span class="bg-gradient-to-r from-emerald-400 via-indigo-300 to-violet-300 bg-clip-text text-transparent">Bulk Hardware Orders</span>
+            </h1>
+
+            <p class="mt-3.5 max-w-xl text-sm sm:text-base text-zinc-300 leading-relaxed">
+              Transaction funds are securely locked until buyer inspection and delivery confirmation with real-time multi-carrier shipment tracking.
+            </p>
+          </div>
+        </div>
+
+        <!-- Action Controls -->
+        <div class="mt-4 flex flex-wrap items-center gap-3 z-20">
+          <a
+            routerLink="/products"
+            class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm sm:text-base font-bold text-white shadow-xl shadow-indigo-600/30 hover:bg-indigo-500 transition cursor-pointer group"
+          >
+            <svg lucideShoppingBag class="h-4 w-4"></svg>
+            <span>Explore Direct Catalog</span>
+            <svg lucideArrowRight class="h-4 w-4 group-hover:translate-x-1 transition"></svg>
+          </a>
+          <a
+            routerLink="/auth"
+            class="inline-flex items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900/90 px-5 py-3 text-xs sm:text-sm font-semibold text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+          >
+            <svg lucideStore class="h-4 w-4 text-indigo-400"></svg>
+            <span>Register Vendor Store</span>
+          </a>
+        </div>
+
+        <!-- Integrated Metrics Footer -->
+        <div class="mt-6 border-t border-zinc-800/80 pt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 z-20">
+          @for (stat of stats; track stat.label) {
+            <div>
+              <p class="text-lg sm:text-xl font-black text-white tracking-tight">{{ stat.value }}</p>
+              <p class="text-[11px] text-zinc-400 mt-0.5 font-medium truncate">{{ stat.label }}</p>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Side Promotional Spotlight Widgets (4 cols) -->
+      <div class="lg:col-span-4 flex flex-col gap-4">
+        <!-- Widget 1: Vendor Direct Badge Card -->
+        <div class="rounded-3xl border border-zinc-800 bg-zinc-900/80 p-5 flex flex-col justify-between shadow-xl">
+          <div class="flex items-center gap-3">
+            <div class="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+              <svg lucideStore class="h-5 w-5"></svg>
+            </div>
+            <div>
+              <h4 class="font-bold text-zinc-100 text-sm">Verified Platinum Vendors</h4>
+              <p class="text-xs text-zinc-400">450+ Active Direct Factories</p>
+            </div>
+          </div>
+          <p class="mt-3 text-xs text-zinc-300 leading-relaxed">
+            Connect directly with verified suppliers for OEM hardware quotes and bulk discounts.
+          </p>
+          <a routerLink="/products" class="mt-3 inline-flex items-center gap-1 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition">
+            <span>Browse Suppliers →</span>
+          </a>
+        </div>
+
+        <!-- Widget 2: Member Perks Card -->
+        <div class="rounded-3xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-indigo-950/60 p-5 flex flex-col justify-between shadow-xl">
+          <div class="flex items-center gap-3">
+            <div class="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+              <svg lucidePercent class="h-5 w-5"></svg>
+            </div>
+            <div>
+              <h4 class="font-bold text-zinc-100 text-sm">Escrow Member Perks</h4>
+              <p class="text-xs text-amber-400 font-semibold">2% Cashback Rewards</p>
+            </div>
+          </div>
+          <p class="mt-3 text-xs text-zinc-300 leading-relaxed">
+            Earn rewards on every escrow-verified bulk hardware order placed this month.
+          </p>
+          <a routerLink="/auth" class="mt-3 inline-flex items-center gap-1 text-xs font-bold text-amber-400 hover:text-amber-300 transition">
+            <span>Join Perks Program →</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Proper E-Commerce Lightning Flash Deals Section (#lightning-deals) -->
+  <section id="lightning-deals" class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 border-t border-zinc-800/80">
+    <!-- Section Header with Live Clock Counter -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="flex items-center gap-2">
+          <div class="h-9 w-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <svg lucideFlame class="h-5 w-5 text-amber-400 animate-bounce"></svg>
+          </div>
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Lightning Flash Deals</h2>
+            <p class="text-xs text-zinc-400">Limited time direct manufacturer discounts</p>
+          </div>
+        </div>
+
+        <!-- Live Digital Clock Display -->
+        <div class="flex items-center gap-2 rounded-2xl bg-zinc-900 border border-amber-500/30 px-3.5 py-1.5 shadow-lg">
+          <svg lucideClock class="h-4 w-4 text-amber-400 animate-spin-slow"></svg>
+          <span class="text-xs text-zinc-400 font-semibold uppercase">Ends in:</span>
+          <div class="flex items-center gap-1 font-mono text-sm font-extrabold text-amber-400">
+            <span class="rounded bg-amber-500/10 px-1.5 py-0.5 border border-amber-500/20">{{ padTwo(timerHours()) }}h</span>
+            <span>:</span>
+            <span class="rounded bg-amber-500/10 px-1.5 py-0.5 border border-amber-500/20">{{ padTwo(timerMinutes()) }}m</span>
+            <span>:</span>
+            <span class="rounded bg-amber-500/10 px-1.5 py-0.5 border border-amber-500/20">{{ padTwo(timerSeconds()) }}s</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deal Category Filter Tabs -->
+      <div class="inline-flex rounded-2xl border border-zinc-800 bg-zinc-900 p-1">
+        <button
+          type="button"
+          (click)="activeDealFilter.set('all')"
+          class="rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer"
+          [class]="activeDealFilter() === 'all' ? 'bg-indigo-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'"
+        >
+          All Deals
+        </button>
+        <button
+          type="button"
+          (click)="activeDealFilter.set('smartphones')"
+          class="rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer"
+          [class]="activeDealFilter() === 'smartphones' ? 'bg-indigo-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'"
+        >
+          Smartphones
+        </button>
+        <button
+          type="button"
+          (click)="activeDealFilter.set('laptops')"
+          class="rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer"
+          [class]="activeDealFilter() === 'laptops' ? 'bg-indigo-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'"
+        >
+          Laptops
+        </button>
+        <button
+          type="button"
+          (click)="activeDealFilter.set('audio')"
+          class="rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer"
+          [class]="activeDealFilter() === 'audio' ? 'bg-indigo-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'"
+        >
+          Audio
+        </button>
+      </div>
+    </div>
+
+    <!-- Multi-Card Flash Deals Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      @for (deal of filteredDeals; track deal.id) {
+        <div class="rounded-3xl border border-zinc-800 bg-zinc-900/80 p-5 flex flex-col justify-between transition duration-300 hover:border-indigo-500/50 hover:shadow-2xl group cursor-pointer relative overflow-hidden">
+          
+          <!-- Discount Savings Badge -->
+          <div class="absolute top-4 left-4 z-10 flex items-center gap-1.5">
+            <span class="rounded-full bg-amber-400 px-2.5 py-0.5 text-[11px] font-black text-zinc-950 shadow-md">
+              {{ deal.discount }}
+            </span>
+            <span class="rounded-full bg-zinc-950/90 border border-zinc-800 px-2.5 py-0.5 text-[10px] font-bold text-amber-300 backdrop-blur-md">
+              {{ deal.savings }}
+            </span>
+          </div>
+
+          <div>
+            <!-- Image Area -->
+            <div class="h-48 w-full rounded-2xl bg-zinc-950 flex items-center justify-center overflow-hidden border border-zinc-800/80 relative group-hover:border-indigo-500/30 transition duration-300">
+              <img
+                [src]="deal.image"
+                [alt]="deal.title"
+                class="h-full w-full object-cover object-center opacity-95 group-hover:scale-105 group-hover:opacity-100 transition duration-500"
+              />
+            </div>
+
+            <!-- Content Area -->
+            <div class="mt-4">
+              <div class="flex items-center gap-1.5 text-[11px] text-indigo-400 font-semibold">
+                <svg lucideShieldCheck class="h-3.5 w-3.5 text-emerald-400"></svg>
+                <span>{{ deal.store }}</span>
+              </div>
+              <h3 class="font-bold text-zinc-100 text-base mt-1 line-clamp-1 group-hover:text-indigo-300 transition">{{ deal.title }}</h3>
+              <p class="text-xs text-zinc-400 line-clamp-1 mt-0.5">{{ deal.subtitle }}</p>
+
+              <!-- Star Rating -->
+              <div class="mt-2 flex items-center gap-1 text-xs">
+                <div class="flex text-amber-400">
+                  <svg lucideStar class="h-3.5 w-3.5 fill-amber-400"></svg>
+                </div>
+                <span class="font-bold text-zinc-200">{{ deal.rating }}</span>
+                <span class="text-zinc-500">({{ deal.reviewsCount }})</span>
+              </div>
+
+              <!-- Price Tag -->
+              <div class="mt-3 flex items-baseline gap-2">
+                <span class="text-xl font-black text-white">{{ deal.price | currency }}</span>
+                <span class="text-xs text-zinc-500 line-through font-medium">{{ deal.originalPrice | currency }}</span>
+              </div>
+
+              <!-- Stock Progress Bar -->
+              <div class="mt-4">
+                <div class="flex items-center justify-between text-[11px] font-medium text-zinc-400 mb-1.5">
+                  <span>Claimed: <strong class="text-zinc-200">{{ deal.soldPercent }}%</strong></span>
+                  <span class="text-amber-400 font-bold">Only {{ deal.stockLeft }} left</span>
+                </div>
+                <div class="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
+                  <div
+                    class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-amber-500 transition-all duration-500"
+                    [style.width.%]="deal.soldPercent"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <a
+            routerLink="/products"
+            class="mt-5 block w-full text-center rounded-2xl bg-indigo-600 py-3 text-xs font-bold text-white shadow-lg shadow-indigo-600/25 hover:bg-indigo-500 transition cursor-pointer"
+          >
+            Claim Deal Now
+          </a>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- 5.5 Realtime Featured Products Grid (#featured-products) -->
+  @if (featuredProducts().length > 0) {
+    <section id="featured-products" class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 border-t border-zinc-800/80">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <div class="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-0.5 text-xs font-semibold text-indigo-300 mb-2">
+            <svg lucidePackage class="h-3.5 w-3.5 text-indigo-400"></svg>
+            <span>LIVE FACTORY INVENTORY</span>
+          </div>
+          <h2 class="text-2xl font-black text-white tracking-tight">Featured Hardware Products</h2>
+        </div>
+        <a routerLink="/products" class="inline-flex items-center gap-1 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition">
+          <span>Explore All {{ featuredProducts().length }}+ Products</span>
+          <svg lucideChevronRight class="h-4 w-4"></svg>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        @for (prod of featuredProducts(); track prod.id) {
+          <app-product-card [product]="prod" />
+        }
+      </div>
+    </section>
+  }
+
+  <!-- 6. Quick Category Cards Grid (#categories-grid) -->
+  <section id="categories-grid" class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-2xl font-black text-white tracking-tight">Explore Top Categories</h2>
+        <p class="text-xs text-zinc-400 mt-1">Browse hardware directly categorized by vendor specifications</p>
+      </div>
+      <a routerLink="/products" class="inline-flex items-center gap-1 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition">
+        <span>View All Catalog</span>
+        <svg lucideChevronRight class="h-4 w-4"></svg>
+      </a>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      @for (cat of categories; track cat.name) {
+        <a
+          routerLink="/products"
+          class="group rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 text-center hover:border-indigo-500/50 hover:bg-zinc-900 transition shadow-md cursor-pointer flex flex-col items-center"
+        >
+          <div class="h-14 w-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition duration-300">
+            @switch (cat.icon) {
+              @case ('smartphone') { <svg lucideSmartphone class="h-6 w-6"></svg> }
+              @case ('laptop') { <svg lucideLaptop class="h-6 w-6"></svg> }
+              @case ('headphones') { <svg lucideHeadphones class="h-6 w-6"></svg> }
+              @case ('watch') { <svg lucideWatch class="h-6 w-6"></svg> }
+              @case ('camera') { <svg lucideCamera class="h-6 w-6"></svg> }
+            }
+          </div>
+          <h3 class="mt-3 font-bold text-zinc-200 text-sm group-hover:text-white">{{ cat.name }}</h3>
+          <p class="mt-0.5 text-[11px] text-zinc-400 font-medium">{{ cat.count }}</p>
+          <span class="mt-2 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+            {{ cat.growth }}
+          </span>
+        </a>
+      }
+    </div>
+  </section>
+
+  <!-- 7. Verified Brands & Top Suppliers Grid (#verified-suppliers) -->
+  <section id="verified-suppliers" class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 border-t border-zinc-800/80">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <div class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-0.5 text-xs font-semibold text-emerald-300 mb-2">
+          <svg lucideShieldCheck class="h-3.5 w-3.5 text-emerald-400"></svg>
+          <span>VERIFIED MANUFACTURERS & PLATINUM VENDORS</span>
+        </div>
+        <h2 class="text-2xl font-black text-white tracking-tight">Top Supplier Ecosystem</h2>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      @for (sup of suppliers; track sup.name) {
+        <div class="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 hover:border-zinc-700 hover:bg-zinc-900 transition flex items-center gap-4 cursor-pointer group shadow-sm">
+          <div class="h-12 w-12 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-indigo-400 shrink-0 group-hover:border-indigo-500/50 transition">
+            <svg lucideStore class="h-6 w-6"></svg>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-zinc-100 text-sm truncate group-hover:text-indigo-300 transition">{{ sup.name }}</h3>
+            </div>
+            <div class="mt-1 flex items-center gap-2 text-xs">
+              <span class="rounded bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400">
+                {{ sup.badge }}
+              </span>
+              <span class="text-amber-400 font-bold text-[11px]">★ {{ sup.rating }}</span>
+            </div>
+            <p class="mt-1 text-[11px] text-zinc-400 font-medium">{{ sup.sales }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- 8. Interactive Specification Matrix (#live-comparison) -->
+  <section id="live-comparison" class="py-16 border-t border-zinc-800/80 bg-zinc-950 relative overflow-hidden">
+    <div class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[800px] rounded-full bg-violet-500/5 blur-3xl"></div>
+
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative">
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <div class="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-3">
+          <svg lucideSliders class="h-3.5 w-3.5 text-violet-400"></svg>
+          <span>NEXUS ATTRIBUTE MATRIX</span>
+        </div>
+        <h2 class="text-3xl font-black text-white tracking-tight sm:text-4xl">
+          Deep Product Specification Engine
+        </h2>
+        <p class="mt-2 text-zinc-400 text-sm">
+          Compare hardware specifications side-by-side with real-time normalized supplier data attributes.
+        </p>
+
+        <!-- Category Selector Toggle -->
+        <div class="mt-6 inline-flex rounded-2xl border border-zinc-800 bg-zinc-900 p-1.5 shadow-inner">
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer"
+            [class]="compareCategory() === 'phone' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-zinc-400 hover:text-zinc-200'"
+            (click)="compareCategory.set('phone')"
+          >
+            <svg lucideSmartphone class="h-4 w-4"></svg>
+            <span>Smartphones</span>
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer"
+            [class]="compareCategory() === 'laptop' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-zinc-400 hover:text-zinc-200'"
+            (click)="compareCategory.set('laptop')"
+          >
+            <svg lucideLaptop class="h-4 w-4"></svg>
+            <span>Laptops & Workstations</span>
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer"
+            [class]="compareCategory() === 'audio' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-zinc-400 hover:text-zinc-200'"
+            (click)="compareCategory.set('audio')"
+          >
+            <svg lucideHeadphones class="h-4 w-4"></svg>
+            <span>Audio & Sound</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Interactive Comparison Table -->
+      <div class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/80 shadow-2xl backdrop-blur-md">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-zinc-950 border-b border-zinc-800">
+            <tr>
+              <th class="px-6 py-5 text-xs font-bold text-zinc-400 uppercase tracking-wider w-1/3">Hardware Specification</th>
+              <th class="px-6 py-5 w-1/3 border-l border-zinc-800">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="font-bold text-zinc-100 text-base">
+                      @if (compareCategory() === 'phone') { {{ phoneA.title }} }
+                      @else if (compareCategory() === 'laptop') { {{ laptopA.title }} }
+                      @else { {{ audioA.title }} }
+                    </p>
+                    <p class="text-xs text-indigo-400 font-medium">
+                      @if (compareCategory() === 'phone') { {{ phoneA.store }} }
+                      @else if (compareCategory() === 'laptop') { {{ laptopA.store }} }
+                      @else { {{ audioA.store }} }
+                    </p>
+                  </div>
+                  <span class="text-lg font-black text-indigo-300">
+                    @if (compareCategory() === 'phone') { {{ phoneA.price | currency }} }
+                    @else if (compareCategory() === 'laptop') { {{ laptopA.price | currency }} }
+                    @else { {{ audioA.price | currency }} }
+                  </span>
+                </div>
+              </th>
+              <th class="px-6 py-5 w-1/3 border-l border-zinc-800">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="font-bold text-zinc-100 text-base">
+                      @if (compareCategory() === 'phone') { {{ phoneB.title }} }
+                      @else if (compareCategory() === 'laptop') { {{ laptopB.title }} }
+                      @else { {{ audioB.title }} }
+                    </p>
+                    <p class="text-xs text-indigo-400 font-medium">
+                      @if (compareCategory() === 'phone') { {{ phoneB.store }} }
+                      @else if (compareCategory() === 'laptop') { {{ laptopB.store }} }
+                      @else { {{ audioB.store }} }
+                    </p>
+                  </div>
+                  <span class="text-lg font-black text-zinc-300">
+                    @if (compareCategory() === 'phone') { {{ phoneB.price | currency }} }
+                    @else if (compareCategory() === 'laptop') { {{ laptopB.price | currency }} }
+                    @else { {{ audioB.price | currency }} }
+                  </span>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800/80">
+            <tr class="hover:bg-zinc-800/40 transition">
+              <td class="px-6 py-4 font-semibold text-zinc-400">Display / Audio Technology</td>
+              <td class="px-6 py-4 border-l border-zinc-800 text-zinc-100 font-medium">
+                @if (compareCategory() === 'phone') { {{ phoneA.display }} }
+                @else if (compareCategory() === 'laptop') { {{ laptopA.display }} }
+                @else { {{ audioA.display }} }
+              </td>
+              <td class="px-6 py-4 border-l border-zinc-800 text-zinc-300">
+                @if (compareCategory() === 'phone') { {{ phoneB.display }} }
+                @else if (compareCategory() === 'laptop') { {{ laptopB.display }} }
+                @else { {{ audioB.display }} }
+              </td>
+            </tr>
+            <tr class="hover:bg-zinc-800/40 transition">
+              <td class="px-6 py-4 font-semibold text-zinc-400">Processor / Silicon SoC</td>
+              <td class="px-6 py-4 border-l border-zinc-800 text-zinc-100 font-medium">
+                <span class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 text-xs text-indigo-300 font-semibold">
+                  <svg lucideCpu class="h-3.5 w-3.5"></svg>
+                  @if (compareCategory() === 'phone') { {{ phoneA.processor }} }
+                  @else if (compareCategory() === 'laptop') { {{ laptopA.processor }} }
+                  @else { {{ audioA.processor }} }
+                </span>
+              </td>
+              <td class="px-6 py-4 border-l border-zinc-800 text-zinc-300">
+                @if (compareCategory() === 'phone') { {{ phoneB.processor }} }
+                @else if (compareCategory() === 'laptop') { {{ laptopB.processor }} }
+                @else { {{ audioB.processor }} }
+              </td>
+            </tr>
+            <tr class="hover:bg-zinc-800/40 transition">
+              <td class="px-6 py-4 font-semibold text-zinc-400">Memory & Bandwidth</td>
+              <td class="px-6 py-4 border-l border-zinc-800 text-zinc-100 font-medium">
+                @if (compareCategory() === 'phone') { {{ phoneA.ram }} }
+                @else if (compareCategory() === 'laptop') { {{ laptopA.ram }} }
+                @else { {{ audioA.ram }} }
+              </td>
+              <td class="px-6 py-4 border-l border-zinc-800 text-zinc-300">
+                @if (compareCategory() === 'phone') { {{ phoneB.ram }} }
+                @else if (compareCategory() === 'laptop') { {{ laptopB.ram }} }
+                @else { {{ audioB.ram }} }
+              </td>
+            </tr>
+            <tr class="hover:bg-zinc-800/40 transition">
+              <td class="px-6 py-4 font-semibold text-zinc-400">Battery & Charging Tech</td>
+              <td class="px-6 py-4 border-l border-zinc-800 text-zinc-100 font-medium">
+                @if (compareCategory() === 'phone') { {{ phoneA.battery }} }
+                @else if (compareCategory() === 'laptop') { {{ laptopA.battery }} }
+                @else { {{ audioA.battery }} }
+              </td>
+              <td class="px-6 py-4 border-l border-zinc-800 text-zinc-300">
+                @if (compareCategory() === 'phone') { {{ phoneB.battery }} }
+                @else if (compareCategory() === 'laptop') { {{ laptopB.battery }} }
+                @else { {{ audioB.battery }} }
+              </td>
+            </tr>
+            <tr class="hover:bg-zinc-800/40 transition">
+              <td class="px-6 py-4 font-semibold text-zinc-400">Verified Buyer Rating</td>
+              <td class="px-6 py-4 border-l border-zinc-800 text-emerald-400 font-bold">
+                @if (compareCategory() === 'phone') { {{ phoneA.rating }} }
+                @else if (compareCategory() === 'laptop') { {{ laptopA.rating }} }
+                @else { {{ audioA.rating }} }
+              </td>
+              <td class="px-6 py-4 border-l border-zinc-800 text-amber-400 font-bold">
+                @if (compareCategory() === 'phone') { {{ phoneB.rating }} }
+                @else if (compareCategory() === 'laptop') { {{ laptopB.rating }} }
+                @else { {{ audioB.rating }} }
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. Trending Marketplace Products Grid -->
+  <section class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 border-t border-zinc-800/80">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-8">
+      <div>
+        <div class="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-300 mb-2">
+          <svg lucidePackage class="h-3.5 w-3.5 text-indigo-400"></svg>
+          <span>LIVE CATALOG STREAM</span>
+        </div>
+        <h2 class="text-3xl font-black text-white tracking-tight">Trending Marketplace Products</h2>
+      </div>
+
+      <a
+        routerLink="/products"
+        class="inline-flex items-center gap-2 text-sm font-bold text-indigo-400 hover:text-indigo-300 transition cursor-pointer"
+      >
+        <span>View Full Catalog</span>
+        <svg lucideArrowRight class="h-4 w-4"></svg>
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      @for (prod of featuredProducts(); track prod.id) {
+        <div class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 transition duration-300 hover:border-indigo-500/50 hover:shadow-2xl flex flex-col justify-between group cursor-pointer">
+          <div>
+            <div class="h-48 w-full overflow-hidden rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center relative">
+              @if (prod.images && prod.images[0]?.url) {
+                <img [src]="prod.images[0].url" [alt]="prod.title" class="h-full w-full object-cover group-hover:scale-105 transition duration-300" />
+              } @else {
+                <svg lucidePackage class="h-10 w-10 text-zinc-600"></svg>
+              }
+              <span class="absolute top-2.5 left-2.5 rounded-lg bg-zinc-900/90 border border-zinc-800 px-2.5 py-0.5 text-[10px] font-bold text-zinc-200 backdrop-blur-md">
+                {{ prod.storeName }}
+              </span>
+            </div>
+            <div class="mt-4">
+              <h3 class="font-bold text-zinc-100 text-sm line-clamp-1 group-hover:text-indigo-300 transition" [title]="prod.title">
+                {{ prod.title }}
+              </h3>
+              <p class="mt-1 text-xs text-zinc-400 line-clamp-2 leading-relaxed">{{ prod.description }}</p>
+            </div>
+          </div>
+
+          <div class="mt-4 flex items-center justify-between border-t border-zinc-800/80 pt-3">
+            <div>
+              <p class="text-[10px] font-semibold text-zinc-400 uppercase">Direct Price</p>
+              <span class="text-lg font-black text-white">{{ prod.price | currency }}</span>
+            </div>
+            <a
+              [routerLink]="['/products', prod.slug]"
+              class="rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-indigo-600 hover:border-indigo-600 hover:text-white transition cursor-pointer"
+            >
+              View Specs
+            </a>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- 10. Testimonials & Client Reviews Section -->
+  <section class="py-16 border-t border-zinc-800/80 bg-zinc-950">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <div class="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-semibold text-amber-400 mb-3">
+          <svg lucideStar class="h-3.5 w-3.5 text-amber-400 fill-amber-400"></svg>
+          <span>TRUSTED BY INDUSTRY LEADERS</span>
+        </div>
+        <h2 class="text-3xl font-black text-white tracking-tight sm:text-4xl">What Our Partners & Buyers Say</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        @for (item of testimonials; track item.author) {
+          <div class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6 flex flex-col justify-between shadow-lg hover:border-zinc-700 transition">
+            <div>
+              <div class="flex items-center gap-1 text-amber-400 mb-4">
+                @for (s of [1,2,3,4,5]; track s) {
+                  <svg lucideStar class="h-4 w-4 fill-amber-400"></svg>
+                }
+              </div>
+              <p class="text-sm text-zinc-300 leading-relaxed font-medium">"{{ item.quote }}"</p>
+            </div>
+
+            <div class="mt-6 flex items-center gap-3 border-t border-zinc-800/80 pt-4">
+              <img [src]="item.avatar" [alt]="item.author" class="h-10 w-10 rounded-full object-cover border border-zinc-700" />
+              <div>
+                <h4 class="font-bold text-zinc-100 text-sm">{{ item.author }}</h4>
+                <p class="text-xs text-zinc-400 font-medium">{{ item.title }}</p>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. "Why Shop & Sell on Nexus" Trust Guarantees Grid (#trust-guarantees) -->
+  <section id="trust-guarantees" class="py-16 border-t border-zinc-800/80 bg-zinc-950">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <h2 class="text-3xl font-black text-white tracking-tight sm:text-4xl">The Nexus Trust Guarantee</h2>
+        <p class="mt-2 text-zinc-400 text-sm">Enterprise security and transaction integrity for buyers and suppliers alike.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 text-center hover:border-emerald-500/40 transition">
+          <div class="mx-auto h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
+            <svg lucideShieldCheck class="h-6 w-6"></svg>
+          </div>
+          <h3 class="font-bold text-zinc-100 text-base">Escrow Protection</h3>
+          <p class="mt-1 text-xs text-zinc-400 leading-relaxed">Funds are safely held until buyer delivery confirmation.</p>
+        </div>
+
+        <div class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 text-center hover:border-indigo-500/40 transition">
+          <div class="mx-auto h-12 w-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4">
+            <svg lucideLock class="h-6 w-6"></svg>
+          </div>
+          <h3 class="font-bold text-zinc-100 text-base">Order Safeguards</h3>
+          <p class="mt-1 text-xs text-zinc-400 leading-relaxed">Active order database locks guarantee inventory safety.</p>
+        </div>
+
+        <div class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 text-center hover:border-violet-500/40 transition">
+          <div class="mx-auto h-12 w-12 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400 mb-4">
+            <svg lucideTruck class="h-6 w-6"></svg>
+          </div>
+          <h3 class="font-bold text-zinc-100 text-base">Express Logistics</h3>
+          <p class="mt-1 text-xs text-zinc-400 leading-relaxed">Real-time status tracking across multi-carrier networks.</p>
+        </div>
+
+        <div class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 text-center hover:border-amber-500/40 transition">
+          <div class="mx-auto h-12 w-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-4">
+            <svg lucideZap class="h-6 w-6"></svg>
+          </div>
+          <h3 class="font-bold text-zinc-100 text-base">Sub-45ms Search</h3>
+          <p class="mt-1 text-xs text-zinc-400 leading-relaxed">Debounced reactive signal engine for instant filtering.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. Newsletter & Action Banner -->
+  <section class="py-20 bg-gradient-to-b from-zinc-950 to-indigo-950/60 border-t border-zinc-800 relative overflow-hidden">
+    <div class="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl"></div>
+
+    <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center relative">
+      <h2 class="text-3xl sm:text-5xl font-black text-white tracking-tight">
+        Join the Future of Enterprise Commerce
+      </h2>
+      <p class="mt-4 text-zinc-300 text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
+        Sign up today to start purchasing directly from verified suppliers or onboard your store catalog with escrow protection.
+      </p>
+
+      <div class="mt-8 flex flex-wrap justify-center gap-4">
+        @if (auth.isAuthenticated()) {
+          <a
+            routerLink="/dashboard"
+            class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-8 py-4 text-sm font-extrabold text-white shadow-xl shadow-indigo-600/40 hover:bg-indigo-500 transition cursor-pointer"
+          >
+            <span>Open Merchant Dashboard</span>
+            <svg lucideArrowRight class="h-4 w-4"></svg>
+          </a>
+        } @else {
+          <a
+            routerLink="/auth"
+            class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-8 py-4 text-sm font-extrabold text-white shadow-xl shadow-indigo-600/40 hover:bg-indigo-500 transition cursor-pointer"
+          >
+            <span>Create Free Merchant Account</span>
+            <svg lucideArrowRight class="h-4 w-4"></svg>
+          </a>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-900 bg-zinc-950 py-12 text-xs text-zinc-400">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <img src="/brand/nexus-icon-64.png" alt="Nexus" class="h-7 w-7 rounded-lg opacity-90" />
+        <div>
+          <span class="font-bold text-zinc-200 block">NEXUS MARKETPLACE</span>
+          <span class="text-zinc-500 text-[11px]">© 2026 Nexus Inc. All rights reserved.</span>
+        </div>
+      </div>
+
+      <div class="flex gap-6 text-zinc-400 font-medium text-xs">
+        <a routerLink="/products" class="hover:text-white transition">Catalog</a>
+        <a routerLink="/auth" class="hover:text-white transition">Supplier Portal</a>
+        <a routerLink="/auth" class="hover:text-white transition">Sign In</a>
+      </div>
+    </div>
+  </footer>
+</div>

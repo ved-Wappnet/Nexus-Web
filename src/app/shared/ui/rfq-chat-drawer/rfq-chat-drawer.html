@@ -1,0 +1,291 @@
+@if (chat.isDrawerOpen()) {
+  <!-- Backdrop -->
+  <div
+    class="fixed inset-0 z-[99998] bg-black/75 backdrop-blur-sm transition-opacity"
+    (click)="chat.closeChat()"
+  ></div>
+
+  <!-- Slide-Over Drawer -->
+  <aside
+    class="fixed inset-y-0 right-0 z-[99999] flex w-full max-w-lg flex-col border-l border-zinc-800 bg-zinc-950 shadow-2xl backdrop-blur-xl transition-all duration-300 ease-in-out"
+  >
+    <!-- Drawer Header -->
+    <div
+      class="flex h-16 items-center justify-between border-b border-zinc-800 px-6 bg-zinc-900/60"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-500/30 bg-indigo-600/20 text-indigo-400"
+        >
+          <svg lucideHandshake class="h-5 w-5"></svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-semibold text-zinc-100">Trade Negotiation</h2>
+            <span
+              class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400"
+            >
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Live
+            </span>
+          </div>
+          <p class="text-xs text-zinc-400 truncate max-w-[280px]">
+            {{ chat.activeQuote()?.productTitle }}
+          </p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700 hover:text-white hover:bg-zinc-800 active:scale-95 transition cursor-pointer"
+        (click)="chat.closeChat()"
+        title="Close Trade Negotiation"
+      >
+        <svg lucideX class="h-4.5 w-4.5"></svg>
+      </button>
+    </div>
+
+    <!-- RFQ Context Bar -->
+    @if (chat.activeQuote(); as quote) {
+      <div class="border-b border-zinc-800/80 bg-zinc-900/30 px-6 py-3">
+        <div class="flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2 text-zinc-400">
+            <span class="text-zinc-300 font-medium">{{ quote.storeName }}</span>
+            <span>•</span>
+            <span
+              >Qty: <strong class="text-zinc-200">{{ quote.targetQuantity }}</strong></span
+            >
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-zinc-400">Target:</span>
+            <span class="font-semibold text-emerald-400">{{
+              quote.requestedUnitPrice | nexusCurrency
+            }}</span>
+            @if (quote.counterUnitPrice) {
+              <span class="text-zinc-500">→</span>
+              <span class="font-semibold text-indigo-400">{{
+                quote.counterUnitPrice | nexusCurrency
+              }}</span>
+            }
+          </div>
+        </div>
+
+        <!-- Forex Volatility & 24h Price-Lock Guarantee Bar -->
+        <div class="mt-2.5 flex items-center justify-between pt-2 border-t border-zinc-800/60">
+          <app-forex-volatility-badge [quoteId]="quote.id" [showLockToggle]="true" />
+        </div>
+
+        <!-- Quick Negotiation Preset Chips -->
+        <div class="mt-2.5 flex flex-wrap gap-1.5">
+          @for (p of negotiationPrompts; track p.label) {
+            <button
+              type="button"
+              (click)="insertPrompt(p.text)"
+              class="inline-flex items-center gap-1 rounded-md border border-zinc-800 bg-zinc-900/80 px-2 py-1 text-[11px] text-zinc-300 hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300 transition cursor-pointer"
+            >
+              <svg lucideSparkles class="h-3 w-3 text-indigo-400"></svg>
+              {{ p.label }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Messages Container -->
+    <div #messagesContainer class="flex-1 overflow-y-auto p-6 space-y-4">
+      @if (chat.messages().length === 0) {
+        <div class="flex h-full flex-col items-center justify-center text-center py-12">
+          <div
+            class="flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900/60 text-zinc-500 mb-3"
+          >
+            <svg lucideMessageSquare class="h-7 w-7"></svg>
+          </div>
+          <h3 class="text-sm font-semibold text-zinc-200">Start Trade Discussion</h3>
+          <p class="mt-1 text-xs text-zinc-400 max-w-xs">
+            Directly negotiate sample requests, custom packaging, lead times, and freight terms
+            before counter-offering.
+          </p>
+        </div>
+      }
+
+      @for (msg of chat.messages(); track msg.id) {
+        @let isMine = msg.senderId === auth.currentUser()?.id;
+        <div class="flex flex-col gap-1" [class.items-end]="isMine" [class.items-start]="!isMine">
+          <!-- Sender Info Header -->
+          <div class="flex items-center gap-1.5 text-[11px] text-zinc-400 px-1">
+            <span class="font-medium text-zinc-300">{{ msg.senderName }}</span>
+            <span
+              class="rounded px-1.5 py-0.2 text-[9px] font-semibold uppercase tracking-wider"
+              [class.bg-indigo-500/20]="msg.senderRole === 'CUSTOMER'"
+              [class.text-indigo-400]="msg.senderRole === 'CUSTOMER'"
+              [class.bg-emerald-500/20]="msg.senderRole === 'SUPPLIER'"
+              [class.text-emerald-400]="msg.senderRole === 'SUPPLIER'"
+              [class.bg-amber-500/20]="msg.senderRole === 'ADMIN'"
+              [class.text-amber-400]="msg.senderRole === 'ADMIN'"
+            >
+              {{ msg.senderRole }}
+            </span>
+            <span class="text-zinc-500">{{ msg.createdAt | date: 'shortTime' }}</span>
+          </div>
+
+          <!-- Message Bubble -->
+          <div class="group relative max-w-[85%]">
+            <div
+              class="rounded-2xl px-4 py-2.5 text-xs shadow-sm transition-all"
+              [class.bg-indigo-600]="isMine && !msg.isDeleted"
+              [class.text-white]="isMine && !msg.isDeleted"
+              [class.bg-zinc-900]="!isMine && !msg.isDeleted"
+              [class.border]="!isMine && !msg.isDeleted"
+              [class.border-zinc-800]="!isMine && !msg.isDeleted"
+              [class.text-zinc-200]="!isMine && !msg.isDeleted"
+              [class.bg-zinc-900/40]="msg.isDeleted"
+              [class.border-dashed]="msg.isDeleted"
+              [class.border-zinc-800/80]="msg.isDeleted"
+              [class.text-zinc-500]="msg.isDeleted"
+              [class.italic]="msg.isDeleted"
+            >
+              @if (msg.isDeleted) {
+                <div class="flex items-center gap-1.5">
+                  <svg lucideTrash2 class="h-3 w-3 opacity-60"></svg>
+                  <span>[This message was deleted]</span>
+                </div>
+              } @else {
+                <p class="whitespace-pre-wrap break-words leading-relaxed">{{ msg.message }}</p>
+
+                <!-- Attachments if any -->
+                @if (msg.attachments && msg.attachments.length > 0) {
+                  <div class="mt-2 space-y-1">
+                    @for (att of msg.attachments; track att.url) {
+                      <a
+                        [href]="att.url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/20 px-2.5 py-1.5 text-[11px] hover:bg-black/30 transition"
+                      >
+                        <svg lucidePackage class="h-3.5 w-3.5"></svg>
+                        <span class="truncate max-w-[200px]">{{ att.name }}</span>
+                      </a>
+                    }
+                  </div>
+                }
+              }
+            </div>
+
+            <!-- Delete Action Button (visible on hover for sender or admin) -->
+            @if (canDelete(msg)) {
+              <div
+                class="absolute -top-3 right-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                @if (deletingMessageId() === msg.id) {
+                  <!-- Confirmation Popover -->
+                  <div
+                    class="flex items-center gap-1 rounded-lg border border-rose-500/40 bg-zinc-950 px-2 py-1 shadow-lg text-[10px]"
+                  >
+                    <span class="text-rose-400">Delete?</span>
+                    <button
+                      type="button"
+                      (click)="executeDelete(msg.id)"
+                      class="font-semibold text-rose-300 hover:text-rose-200 px-1 py-0.5 rounded cursor-pointer"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      (click)="cancelDelete()"
+                      class="text-zinc-400 hover:text-zinc-200 px-1 py-0.5 rounded cursor-pointer"
+                    >
+                      No
+                    </button>
+                  </div>
+                } @else {
+                  <button
+                    type="button"
+                    (click)="confirmDelete(msg.id)"
+                    title="Delete message"
+                    class="flex h-6 w-6 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-rose-500/50 hover:bg-rose-500/20 hover:text-rose-300 transition shadow cursor-pointer"
+                  >
+                    <svg lucideTrash2 class="h-3 w-3"></svg>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Read status indicator for sender's own messages -->
+          @if (isMine && !msg.isDeleted) {
+            <div class="flex items-center gap-1 text-[10px] text-zinc-500 px-1">
+              @if (msg.readBy && msg.readBy.length > 1) {
+                <span class="flex items-center gap-0.5 text-indigo-400">
+                  <svg lucideCheckCheck class="h-3 w-3"></svg>
+                  Read
+                </span>
+              } @else {
+                <span class="flex items-center gap-0.5 text-zinc-500">
+                  <svg lucideCheck class="h-3 w-3"></svg>
+                  Sent
+                </span>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Typing Indicator -->
+      @if (chat.typingUser(); as typer) {
+        <div class="flex items-center gap-2 text-xs text-zinc-400 animate-pulse">
+          <div class="flex gap-1">
+            <span class="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce"></span>
+            <span
+              class="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:0.2s]"
+            ></span>
+            <span
+              class="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:0.4s]"
+            ></span>
+          </div>
+          <span>{{ typer.email }} is typing...</span>
+        </div>
+      }
+    </div>
+
+    <!-- Chat Input Footer -->
+    <div class="border-t border-zinc-800 bg-zinc-900/60 p-4">
+      <div class="flex items-end gap-2">
+        <textarea
+          rows="2"
+          [ngModel]="inputText()"
+          (ngModelChange)="inputText.set($event)"
+          (input)="onInput()"
+          (keydown)="onKeyDown($event)"
+          placeholder="Discuss lead times, custom packaging, sample requests..."
+          class="flex-1 resize-none rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        ></textarea>
+
+        <button
+          type="button"
+          [disabled]="!inputText().trim() || chat.isSending()"
+          (click)="send()"
+          class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer flex-shrink-0"
+        >
+          <svg lucideSend class="h-4 w-4"></svg>
+        </button>
+      </div>
+
+      <div class="mt-2 flex items-center justify-between text-[11px] text-zinc-500">
+        <span
+          >Press
+          <kbd class="rounded border border-zinc-800 bg-zinc-900 px-1 py-0.5 text-[10px]"
+            >Enter</kbd
+          >
+          to send,
+          <kbd class="rounded border border-zinc-800 bg-zinc-900 px-1 py-0.5 text-[10px]"
+            >Shift+Enter</kbd
+          >
+          for new line</span
+        >
+        @if (chat.isSending()) {
+          <span class="text-indigo-400">Sending...</span>
+        }
+      </div>
+    </div>
+  </aside>
+}

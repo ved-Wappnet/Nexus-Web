@@ -1,0 +1,293 @@
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight text-zinc-100">Catalog</h1>
+    <p class="text-sm text-zinc-400">Approved wholesale inventory across verified enterprise vendors.</p>
+  </div>
+  <div class="flex items-center gap-3">
+    <app-forex-volatility-badge [compact]="true" [showLockToggle]="false" />
+    @if (result()) {
+      <span class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-1.5 text-xs font-medium text-zinc-400">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+        <span class="font-semibold text-zinc-200">{{ result()!.total }}</span> items listed
+      </span>
+    }
+  </div>
+</div>
+
+<div class="flex flex-col gap-6 lg:flex-row">
+  <!-- Modern Catalog Filter Sidebar -->
+  <aside class="lg:sticky lg:top-24 h-fit w-full shrink-0 space-y-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/70 p-5 backdrop-blur-xl shadow-xl lg:w-72">
+    <!-- Filter Header -->
+    <div class="flex items-center justify-between pb-3.5 border-b border-zinc-800/80">
+      <div class="flex items-center gap-2.5">
+        <div class="flex h-8 w-8 items-center justify-center rounded-xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-400">
+          <svg lucideSlidersHorizontal class="h-4 w-4"></svg>
+        </div>
+        <div>
+          <h2 class="text-sm font-bold text-zinc-100 tracking-tight">Filters</h2>
+          <p class="text-[11px] text-zinc-400 font-medium">Refine catalog products</p>
+        </div>
+      </div>
+
+      @if (hasActiveFilters()) {
+        <button
+          type="button"
+          (click)="resetFilters()"
+          class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-800/80 px-2.5 py-1 text-xs font-medium text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800 hover:text-rose-300 transition cursor-pointer"
+          title="Reset all filters"
+        >
+          <svg lucideRotateCcw class="h-3 w-3"></svg>
+          <span>Reset</span>
+          <span class="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-indigo-500 px-1 text-[10px] font-bold text-white leading-none">
+            {{ activeFiltersCount() }}
+          </span>
+        </button>
+      }
+    </div>
+
+    <!-- Instant Search Input -->
+    <div class="space-y-1.5">
+      <div class="flex items-center justify-between">
+        <label for="catalog-search" class="text-xs font-bold uppercase tracking-wider text-zinc-400">Search</label>
+        @if (q()) {
+          <button type="button" (click)="clearSearch()" class="text-[11px] font-medium text-indigo-400 hover:underline cursor-pointer">
+            Clear
+          </button>
+        }
+      </div>
+      <div class="relative">
+        <svg lucideSearch class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none"></svg>
+        <input
+          id="catalog-search"
+          class="w-full rounded-xl border border-zinc-800/80 bg-zinc-950/80 py-2 pl-9 pr-8 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none ring-indigo-500/30 transition focus:border-indigo-500/70 focus:ring-2 focus:bg-zinc-950"
+          [ngModel]="q()"
+          (ngModelChange)="onSearchInput($event)"
+          placeholder="Filter by title, SKU..."
+        />
+        @if (q()) {
+          <button
+            type="button"
+            (click)="clearSearch()"
+            class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-zinc-500 hover:text-zinc-300 cursor-pointer"
+          >
+            <svg lucideX class="h-3.5 w-3.5"></svg>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Category Hierarchy Tree -->
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+          <svg lucideLayers class="h-3.5 w-3.5 text-zinc-500"></svg>
+          <span>Category</span>
+        </p>
+        @if (categoryId()) {
+          <button
+            type="button"
+            (click)="selectCategory('')"
+            class="text-[11px] font-medium text-indigo-400 hover:underline cursor-pointer"
+          >
+            All Categories
+          </button>
+        }
+      </div>
+
+      <div class="space-y-1 max-h-56 overflow-y-auto pr-1">
+        <!-- All Categories button -->
+        <button
+          type="button"
+          class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition cursor-pointer text-left"
+          [class]="!categoryId() ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/30' : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200 border border-transparent'"
+          (click)="selectCategory('')"
+        >
+          <span class="flex items-center gap-2">
+            <span class="h-1.5 w-1.5 rounded-full" [class]="!categoryId() ? 'bg-indigo-400' : 'bg-zinc-600'"></span>
+            All Categories
+          </span>
+          @if (!categoryId()) {
+            <svg lucideCheck class="h-3.5 w-3.5 text-indigo-400"></svg>
+          }
+        </button>
+
+        @for (root of roots(); track root.id) {
+          <div class="space-y-0.5">
+            <button
+              type="button"
+              class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition cursor-pointer text-left group"
+              [class]="categoryId() === root.id ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/30' : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200 border border-transparent'"
+              (click)="selectCategory(root.id)"
+            >
+              <span class="flex items-center gap-2 truncate">
+                <span class="h-1.5 w-1.5 rounded-full shrink-0" [class]="categoryId() === root.id ? 'bg-indigo-400' : 'bg-zinc-600 group-hover:bg-zinc-400'"></span>
+                <span class="truncate">{{ root.name }}</span>
+              </span>
+              @if (categoryId() === root.id) {
+                <svg lucideCheck class="h-3.5 w-3.5 text-indigo-400 shrink-0"></svg>
+              } @else if (children(root.id).length > 0) {
+                <span class="text-[10px] text-zinc-600 group-hover:text-zinc-400 shrink-0 font-mono">{{ children(root.id).length }}</span>
+              }
+            </button>
+
+            @if (children(root.id).length > 0) {
+              <div class="ml-3.5 border-l border-zinc-800/80 pl-2.5 space-y-0.5 my-0.5">
+                @for (child of children(root.id); track child.id) {
+                  <button
+                    type="button"
+                    class="w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-[11.5px] transition cursor-pointer"
+                    [class]="categoryId() === child.id ? 'bg-indigo-500/15 text-indigo-300 font-medium' : 'text-zinc-500 hover:bg-zinc-800/40 hover:text-zinc-300'"
+                    (click)="selectCategory(child.id)"
+                  >
+                    <span class="truncate">{{ child.name }}</span>
+                    @if (categoryId() === child.id) {
+                      <span class="h-1 w-1 rounded-full bg-indigo-400 shrink-0"></span>
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Max Price Range Filter -->
+    <div class="space-y-3 pt-3.5 border-t border-zinc-800/80">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+          <svg lucideDollarSign class="h-3.5 w-3.5 text-zinc-500"></svg>
+          <span>Max Price</span>
+        </span>
+        <span class="font-mono text-xs font-bold text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-lg">
+          {{ maxPrice() | currency }}
+        </span>
+      </div>
+
+      <div class="space-y-2">
+        <input
+          type="range"
+          [min]="systemMinPrice()"
+          [max]="systemMaxPrice()"
+          [ngModel]="maxPrice()"
+          (ngModelChange)="onPriceChange(+$event)"
+          class="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-zinc-800 accent-indigo-500"
+        />
+        <div class="flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+          <span>Min: {{ systemMinPrice() | currency }}</span>
+          <span>Max: {{ systemMaxPrice() | currency }}</span>
+        </div>
+
+        <!-- Quick price threshold chips -->
+        @if (quickPriceChips().length > 0) {
+          <div class="flex items-center gap-1.5 pt-1">
+            @for (chip of quickPriceChips(); track chip.label) {
+              <button
+                type="button"
+                (click)="setQuickPrice(chip.value)"
+                class="flex-1 rounded-lg border px-1.5 py-1 text-center font-mono text-[10px] font-medium transition cursor-pointer"
+                [class]="maxPrice() === chip.value ? 'border-indigo-500/50 bg-indigo-600/20 text-indigo-300 font-semibold' : 'border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'"
+              >
+                {{ chip.label }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Vendor Filter -->
+    <div class="space-y-2 pt-3.5 border-t border-zinc-800/80">
+      <span class="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+        <svg lucideStore class="h-3.5 w-3.5 text-zinc-500"></svg>
+        <span>Vendor</span>
+      </span>
+      <app-select
+        placeholder="All vendors"
+        [options]="vendorOptions()"
+        [ngModel]="supplierId()"
+        (ngModelChange)="setVendor($event)"
+      />
+    </div>
+
+    <!-- Active Filters Summary Badges -->
+    @if (hasActiveFilters()) {
+      <div class="pt-3.5 border-t border-zinc-800/80 space-y-2">
+        <p class="text-[10.5px] font-bold uppercase tracking-wider text-zinc-500">Active Filters</p>
+        <div class="flex flex-wrap gap-1.5">
+          @if (q()) {
+            <span class="inline-flex items-center gap-1 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2 py-1 text-[11px] text-indigo-300 font-medium">
+              "{{ q() }}"
+              <button type="button" (click)="clearSearch()" class="hover:text-white cursor-pointer ml-0.5">
+                <svg lucideX class="h-3 w-3"></svg>
+              </button>
+            </span>
+          }
+          @if (activeCategoryName()) {
+            <span class="inline-flex items-center gap-1 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2 py-1 text-[11px] text-indigo-300 font-medium">
+              {{ activeCategoryName() }}
+              <button type="button" (click)="selectCategory('')" class="hover:text-white cursor-pointer ml-0.5">
+                <svg lucideX class="h-3 w-3"></svg>
+              </button>
+            </span>
+          }
+          @if (activeSupplierName()) {
+            <span class="inline-flex items-center gap-1 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2 py-1 text-[11px] text-indigo-300 font-medium">
+              {{ activeSupplierName() }}
+              <button type="button" (click)="setVendor('')" class="hover:text-white cursor-pointer ml-0.5">
+                <svg lucideX class="h-3 w-3"></svg>
+              </button>
+            </span>
+          }
+          @if (maxPrice() < systemMaxPrice()) {
+            <span class="inline-flex items-center gap-1 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2 py-1 text-[11px] text-indigo-300 font-medium">
+              &le; {{ maxPrice() | currency }}
+              <button type="button" (click)="onPriceChange(systemMaxPrice())" class="hover:text-white cursor-pointer ml-0.5">
+                <svg lucideX class="h-3 w-3"></svg>
+              </button>
+            </span>
+          }
+        </div>
+      </div>
+    }
+  </aside>
+
+  <div class="min-w-0 flex-1">
+    @if (loading()) {
+      <app-loader variant="grid" />
+    } @else if ((result()?.items.length ?? 0) === 0) {
+      <app-empty-state title="No products match" detail="Relax a filter or clear search." />
+    } @else {
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        @for (product of result()!.items; track product.id) {
+          <app-product-card [product]="product">
+            @if (auth.role() === UserRoles.CUSTOMER) {
+              <button
+                type="button"
+                class="inline-flex items-center gap-1 cursor-pointer text-xs font-semibold transition px-2 py-0.5 rounded-lg"
+                [class]="saved(product.id) ? 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'"
+                (click)="toggleWish(product.id, $event)"
+                [title]="saved(product.id) ? 'Remove from wishlist' : 'Save to wishlist'"
+              >
+                <svg lucideHeart class="h-3 w-3" [class.fill-emerald-400]="saved(product.id)"></svg>
+                <span>{{ saved(product.id) ? 'Saved' : 'Save' }}</span>
+              </button>
+            }
+          </app-product-card>
+        }
+      </div>
+      <div class="mt-6 flex gap-2">
+        @for (p of pages(); track p) {
+          <button
+            type="button"
+            class="cursor-pointer rounded-lg border px-3 py-1 text-sm"
+            [class]="page() === p ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-zinc-800 text-zinc-400'"
+            (click)="go(p)"
+          >
+            {{ p }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+</div>

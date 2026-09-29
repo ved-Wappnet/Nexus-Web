@@ -1,0 +1,196 @@
+<div
+  class="absolute right-0 top-12 z-50 w-84 sm:w-96 rounded-2xl border border-zinc-800 bg-zinc-900/95 p-0 shadow-2xl shadow-black/80 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150 overflow-hidden"
+>
+  <!-- Panel Header -->
+  <div class="flex items-center justify-between border-b border-zinc-800/90 px-4 py-3 bg-zinc-950/60">
+    <div class="flex items-center gap-2">
+      <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
+        <svg lucideBell class="h-3.5 w-3.5"></svg>
+      </div>
+      <div>
+        <h3 class="text-xs font-bold text-zinc-100">Notifications</h3>
+      </div>
+      @if (notificationService.unreadCount() > 0) {
+        <span class="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-indigo-600 px-1 text-[9px] font-bold text-white shadow-sm shadow-indigo-600/50">
+          {{ notificationService.unreadCount() }} new
+        </span>
+      }
+    </div>
+
+    <!-- Header Actions -->
+    <div class="flex items-center gap-1">
+      <!-- Sound Chime Toggle -->
+      <button
+        type="button"
+        (click)="notificationService.toggleSound()"
+        [title]="notificationService.soundEnabled() ? 'Mute notification sound' : 'Enable notification sound'"
+        class="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition cursor-pointer"
+      >
+        @if (notificationService.soundEnabled()) {
+          <svg lucideVolume2 class="h-3.5 w-3.5 text-indigo-400"></svg>
+        } @else {
+          <svg lucideVolumeX class="h-3.5 w-3.5 text-zinc-500"></svg>
+        }
+      </button>
+
+      <!-- Mark All As Read -->
+      @if (notificationService.unreadCount() > 0) {
+        <button
+          type="button"
+          (click)="notificationService.markAllAsRead()"
+          title="Mark all as read"
+          class="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-indigo-400 hover:bg-zinc-800 transition cursor-pointer"
+        >
+          <svg lucideCheckCheck class="h-3 w-3"></svg>
+          <span class="hidden sm:inline">Read all</span>
+        </button>
+      }
+
+      <!-- Close Panel Button -->
+      <button
+        type="button"
+        (click)="notificationService.closePanel()"
+        class="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition cursor-pointer"
+      >
+        <svg lucideX class="h-3.5 w-3.5"></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="flex items-center gap-1 border-b border-zinc-800/80 px-4 py-1.5 bg-zinc-950/30 text-xs">
+    <button
+      type="button"
+      (click)="notificationService.setFilter('all')"
+      class="rounded-lg px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer"
+      [class]="notificationService.filter() === 'all'
+        ? 'bg-zinc-800 text-zinc-100 shadow-sm'
+        : 'text-zinc-400 hover:text-zinc-200'"
+    >
+      All ({{ notificationService.notifications().length }})
+    </button>
+    <button
+      type="button"
+      (click)="notificationService.setFilter('unread')"
+      class="rounded-lg px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer"
+      [class]="notificationService.filter() === 'unread'
+        ? 'bg-zinc-800 text-zinc-100 shadow-sm'
+        : 'text-zinc-400 hover:text-zinc-200'"
+    >
+      Unread ({{ notificationService.unreadCount() }})
+    </button>
+  </div>
+
+  <!-- Notifications List Container -->
+  <div class="max-h-84 overflow-y-auto divide-y divide-zinc-800/50 overscroll-contain">
+    @if (notificationService.filteredNotifications().length === 0) {
+      <div class="flex flex-col items-center justify-center p-8 text-center">
+        <div class="flex h-10 w-10 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900/60 text-zinc-500 mb-2.5">
+          <svg lucideBellOff class="h-5 w-5"></svg>
+        </div>
+        <p class="text-xs font-semibold text-zinc-300">All caught up!</p>
+        <p class="text-[11px] text-zinc-500 mt-0.5">No notifications in this view.</p>
+      </div>
+    } @else {
+      @for (item of notificationService.filteredNotifications(); track item.id) {
+        <div
+          class="group relative flex items-start gap-3 p-3.5 transition hover:bg-zinc-800/40 cursor-pointer"
+          [class.bg-indigo-950/15]="!item.isRead"
+          (click)="handleClick(item)"
+        >
+          <!-- Unread Dot Indicator -->
+          @if (!item.isRead) {
+            <span class="absolute left-1.5 top-5 h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-sm shadow-indigo-400/80"></span>
+          }
+
+          <!-- Type Icon Squircle -->
+          <div
+            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border font-bold shadow-sm"
+            [class]="getTypeIconBg(item.type)"
+          >
+            @switch (item.type) {
+              @case ('RFQ') {
+                <svg lucideFileText class="h-4 w-4"></svg>
+              }
+              @case ('ORDER') {
+                <svg lucideReceipt class="h-4 w-4"></svg>
+              }
+              @case ('TICKET') {
+                <svg lucideMessageSquare class="h-4 w-4"></svg>
+              }
+              @case ('WATCHLIST') {
+                <svg lucideTrendingDown class="h-4 w-4"></svg>
+              }
+              @default {
+                <svg lucideBell class="h-4 w-4"></svg>
+              }
+            }
+          </div>
+
+          <!-- Notification Content -->
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between gap-1.5">
+              <p
+                class="text-xs truncate"
+                [class.font-bold]="!item.isRead"
+                [class.text-zinc-100]="!item.isRead"
+                [class.font-medium]="item.isRead"
+                [class.text-zinc-300]="item.isRead"
+              >
+                {{ item.title }}
+              </p>
+              <span class="text-[10px] text-zinc-500 font-mono shrink-0">
+                {{ formatRelativeTime(item.createdAt) }}
+              </span>
+            </div>
+
+            <p class="text-[11.5px] text-zinc-400 line-clamp-2 mt-0.5 leading-snug">
+              {{ item.message }}
+            </p>
+
+            <div class="flex items-center justify-between gap-2 mt-2">
+              @if (item.linkUrl) {
+                <span class="inline-flex items-center gap-1 text-[10px] font-medium text-indigo-400 hover:text-indigo-300">
+                  <span>View Details</span>
+                  <svg lucideExternalLink class="h-2.5 w-2.5"></svg>
+                </span>
+              } @else {
+                <span></span>
+              }
+
+              <!-- Mark Single As Read Action -->
+              @if (!item.isRead) {
+                <button
+                  type="button"
+                  (click)="$event.stopPropagation(); notificationService.markAsRead(item.id)"
+                  title="Mark as read"
+                  class="rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-indigo-400 transition"
+                >
+                  <svg lucideCheck class="h-3 w-3"></svg>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+  <!-- Panel Footer -->
+  @if (notificationService.notifications().length > 0) {
+    <div class="flex items-center justify-between border-t border-zinc-800/80 px-4 py-2 bg-zinc-950/60">
+      <button
+        type="button"
+        (click)="notificationService.clearAll()"
+        class="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 hover:text-rose-400 transition cursor-pointer"
+      >
+        <svg lucideTrash2 class="h-3 w-3"></svg>
+        <span>Clear all</span>
+      </button>
+
+      <span class="text-[10px] text-zinc-500 font-mono">
+        {{ notificationService.unreadCount() }} unread
+      </span>
+    </div>
+  }
+</div>

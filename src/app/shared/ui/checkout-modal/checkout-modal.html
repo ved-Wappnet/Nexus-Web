@@ -1,0 +1,275 @@
+<app-modal [open]="open()" [title]="title()" size="md" (closed)="closeModal()">
+  @if (isPaid()) {
+    <div class="py-8 text-center space-y-4">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+        <svg lucideCheckCircle2 class="h-10 w-10"></svg>
+      </div>
+      <h3 class="text-xl font-bold text-white">Payment Authorized!</h3>
+      @if (isWholesaleEligible() && paymentPlan() === 'ESCROW') {
+        <p class="text-xs text-zinc-300 max-w-sm mx-auto">
+          30% Upfront Deposit of <strong class="text-emerald-400 font-mono text-sm">{{ chargeAmount() | currency }}</strong> disbursed to initiate manufacturing. Remaining <strong class="text-indigo-400 font-mono text-sm">{{ (amount() - chargeAmount()) | currency }}</strong> secured in Nexus Escrow Vault.
+        </p>
+        <div class="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-xs font-mono text-zinc-300 border border-zinc-800">
+          <svg lucideShieldCheck class="h-4 w-4 text-emerald-400"></svg>
+          <span class="text-emerald-400 font-bold">30% DISBURSED · 70% IN ESCROW</span>
+        </div>
+      } @else {
+        <p class="text-xs text-zinc-400 max-w-xs mx-auto">
+          Your payment of <strong class="text-emerald-400 font-mono text-sm">{{ amount() | currency }}</strong> has been verified via Stripe.
+        </p>
+        <div class="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-xs font-mono text-zinc-300 border border-zinc-800">
+          <span>Status: </span>
+          <span class="text-emerald-400 font-bold">PAID & CONFIRMED</span>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="space-y-5">
+      <!-- Itemized Receipt Box -->
+      <div class="rounded-2xl border border-indigo-500/30 bg-indigo-950/20 p-4 space-y-2">
+        <div class="flex items-center justify-between text-xs text-zinc-400">
+          <span>Target Contract / Order:</span>
+          <span class="font-bold text-white truncate max-w-[200px]">{{ itemTitle() || 'B2B Wholesale Contract' }}</span>
+        </div>
+        @if (platformFee() > 0) {
+          <div class="flex items-center justify-between text-xs text-zinc-400">
+            <span>Includes Platform Fee:</span>
+            <span class="font-mono text-amber-400 font-semibold">{{ platformFee() | currency }}</span>
+          </div>
+        }
+        <div class="pt-2 border-t border-indigo-500/20 flex items-center justify-between text-sm">
+          <span class="font-semibold text-zinc-200">Total Contract GMV:</span>
+          <span class="font-mono font-extrabold text-indigo-300 text-base">{{ amount() | currency }}</span>
+        </div>
+      </div>
+
+      <!-- B2B Wholesale Milestone Escrow Selector (For orders >= $5,000) -->
+      @if (isWholesaleEligible()) {
+        <div class="rounded-2xl border border-indigo-500/40 bg-gradient-to-b from-indigo-950/40 to-zinc-950 p-4 space-y-3.5 shadow-lg">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                <svg lucideShield class="h-4 w-4"></svg>
+              </div>
+              <div>
+                <h4 class="text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5">
+                  <span>Wholesale Payment Plan</span>
+                  <span class="rounded bg-indigo-500/20 px-1.5 py-0.5 text-[10px] font-bold text-indigo-300 border border-indigo-500/30">B2B Standard</span>
+                </h4>
+                <p class="text-[11px] text-zinc-400">Orders > $5,000 qualify for milestone escrow protection</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Split Payment Toggle -->
+          <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
+            <button
+              type="button"
+              (click)="paymentPlan.set('ESCROW')"
+              [class]="paymentPlan() === 'ESCROW' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold' : 'text-zinc-400 hover:text-zinc-200 font-medium'"
+              class="flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs transition cursor-pointer"
+            >
+              <svg lucideShieldCheck class="h-3.5 w-3.5"></svg>
+              <span>3-Stage Escrow (30/40/30)</span>
+            </button>
+            <button
+              type="button"
+              (click)="paymentPlan.set('FULL')"
+              [class]="paymentPlan() === 'FULL' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold' : 'text-zinc-400 hover:text-zinc-200 font-medium'"
+              class="flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs transition cursor-pointer"
+            >
+              <svg lucideCreditCard class="h-3.5 w-3.5"></svg>
+              <span>Pay 100% In Full</span>
+            </button>
+          </div>
+
+          @if (paymentPlan() === 'ESCROW') {
+            <!-- Milestone Breakdown Cards -->
+            <div class="space-y-2 pt-1">
+              <!-- Milestone 1 -->
+              <div class="flex items-center justify-between rounded-xl border border-indigo-500/30 bg-indigo-950/30 p-2.5">
+                <div class="flex items-center gap-2.5">
+                  <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-300 text-xs font-bold shrink-0">
+                    30%
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-bold text-white">Upfront Deposit</span>
+                      <span class="rounded bg-emerald-500/20 px-1 py-0.2 text-[9px] font-bold text-emerald-300 border border-emerald-500/30">Due Today</span>
+                    </div>
+                    <p class="text-[11px] text-zinc-400">To initiate manufacturing & packaging</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-mono text-sm font-extrabold text-indigo-300">{{ upfrontAmount() | currency }}</div>
+                  <div class="text-[10px] text-emerald-400 font-semibold">Immediate Release</div>
+                </div>
+              </div>
+
+              <!-- Milestone 2 -->
+              <div class="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5">
+                <div class="flex items-center gap-2.5">
+                  <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-300 text-xs font-bold shrink-0">
+                    40%
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-bold text-zinc-200">In-Transit Corridor</span>
+                      <span class="rounded bg-zinc-800 px-1 py-0.2 text-[9px] font-semibold text-zinc-400">Secured</span>
+                    </div>
+                    <p class="text-[11px] text-zinc-400">Released when courier scans customs on Transit Map</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-mono text-xs font-bold text-zinc-300">{{ inTransitAmount() | currency }}</div>
+                  <div class="text-[10px] text-zinc-500">Customs Trigger</div>
+                </div>
+              </div>
+
+              <!-- Milestone 3 -->
+              <div class="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5">
+                <div class="flex items-center gap-2.5">
+                  <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-300 text-xs font-bold shrink-0">
+                    30%
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-bold text-zinc-200">Upon Delivery Acceptance</span>
+                      <span class="rounded bg-zinc-800 px-1 py-0.2 text-[9px] font-semibold text-zinc-400">Secured</span>
+                    </div>
+                    <p class="text-[11px] text-zinc-400">Released after buyer physical goods inspection</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-mono text-xs font-bold text-zinc-300">{{ deliveryAmount() | currency }}</div>
+                  <div class="text-[10px] text-zinc-500">Inspection Signoff</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 rounded-xl bg-zinc-900/90 border border-zinc-800/80 px-3 py-2 text-[11px] text-zinc-400">
+              <svg lucideShieldCheck class="h-4 w-4 text-emerald-400 shrink-0"></svg>
+              <span>You only pay <strong>{{ upfrontAmount() | currency }}</strong> now. The remaining <strong>{{ (inTransitAmount() + deliveryAmount()) | currency }}</strong> is locked in Nexus Escrow.</span>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Quick Test Card Preset Button -->
+      <div class="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5">
+        <div class="flex items-center gap-2 text-xs text-zinc-400">
+          <svg lucideSparkles class="h-4 w-4 text-indigo-400 shrink-0"></svg>
+          <span>Stripe Sandbox Mode</span>
+        </div>
+        <button
+          type="button"
+          (click)="fillTestCard()"
+          class="rounded-lg border border-indigo-500/30 bg-indigo-600/20 px-2.5 py-1 text-xs font-bold text-indigo-300 hover:bg-indigo-600/30 transition cursor-pointer"
+        >
+          Autofill Test Card ⚡
+        </button>
+      </div>
+
+      <!-- Credit Card Form -->
+      <form [formGroup]="cardForm" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 mb-1">Cardholder Name</label>
+          <input
+            type="text"
+            formControlName="cardholderName"
+            placeholder="e.g. John Doe"
+            class="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition focus:border-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 mb-1">Card Number</label>
+          <div class="relative">
+            <input
+              type="text"
+              formControlName="cardNumber"
+              placeholder="4242 4242 4242 4242"
+              class="w-full rounded-xl border border-zinc-800 bg-zinc-950 pl-3.5 pr-10 py-2.5 text-sm text-zinc-100 font-mono placeholder-zinc-600 outline-none transition focus:border-indigo-500"
+            />
+            <svg lucideCreditCard class="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500"></svg>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-zinc-400 mb-1">Expiry (MM/YY)</label>
+            <input
+              type="text"
+              formControlName="expiry"
+              placeholder="12/28"
+              class="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 font-mono text-center outline-none transition focus:border-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-zinc-400 mb-1">CVC</label>
+            <input
+              type="text"
+              formControlName="cvc"
+              placeholder="123"
+              class="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 font-mono text-center outline-none transition focus:border-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-zinc-400 mb-1">Zip Code</label>
+            <input
+              type="text"
+              formControlName="zipCode"
+              placeholder="90210"
+              class="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 text-center outline-none transition focus:border-indigo-500"
+            />
+          </div>
+        </div>
+      </form>
+
+      <!-- Bottom Actions & Security Notice -->
+      <div class="pt-3 border-t border-zinc-800 space-y-3">
+        <div class="flex items-center justify-between text-[11px] text-zinc-500">
+          <div class="flex items-center gap-1.5">
+            <svg lucideShieldCheck class="h-3.5 w-3.5 text-emerald-400"></svg>
+            <span>256-bit SSL Encrypted via Stripe</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <svg lucideLock class="h-3.5 w-3.5 text-zinc-400"></svg>
+            <span>PCI-DSS Level 1</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          [disabled]="isProcessing()"
+          (click)="processPayment()"
+          class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 transition cursor-pointer disabled:opacity-50"
+        >
+          <svg lucideCreditCard class="h-4 w-4"></svg>
+          @if (isProcessing()) {
+            <span>Authorizing with Stripe...</span>
+          } @else if (isWholesaleEligible() && paymentPlan() === 'ESCROW') {
+            <span>Authorize 30% Upfront ({{ chargeAmount() | currency }}) & Secure Escrow</span>
+          } @else {
+            <span>Pay {{ amount() | currency }} Now</span>
+          }
+        </button>
+
+        <button
+          type="button"
+          [disabled]="isRedirectingStripe() || isProcessing()"
+          (click)="payViaStripeHosted()"
+          class="w-full text-center text-xs text-zinc-400 hover:text-indigo-300 transition cursor-pointer py-1 disabled:opacity-50"
+        >
+          @if (isRedirectingStripe()) {
+            <span>Redirecting to Stripe...</span>
+          } @else {
+            <span>Or checkout via external Stripe Hosted Page ↗</span>
+          }
+        </button>
+      </div>
+    </div>
+  }
+</app-modal>

@@ -1,0 +1,318 @@
+<div class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+  <div>
+    <h1 class="text-2xl font-semibold tracking-tight text-zinc-100">Customer Support & Dispute Desk</h1>
+    <p class="text-sm text-zinc-400">Manage inquiries, delivery assistance, order dispute resolution, and vendor communications.</p>
+  </div>
+
+  <div class="flex items-center gap-3 w-full sm:w-auto">
+    <!-- Search Bar -->
+    <div class="relative w-full sm:w-72">
+      <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400">
+        <svg lucideSearch class="h-4 w-4"></svg>
+      </div>
+      <input
+        type="text"
+        [value]="searchQuery()"
+        (input)="searchQuery.set($any($event.target).value)"
+        placeholder="Search tickets, subject, order ID..."
+        class="w-full rounded-xl border border-zinc-800 bg-zinc-900/90 py-2.5 pl-9 pr-8 text-xs text-zinc-100 placeholder-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition shadow-inner"
+      />
+      @if (loading()) {
+        <div class="absolute inset-y-0 right-7 flex items-center pointer-events-none">
+          <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent"></span>
+        </div>
+      }
+      @if (searchQuery()) {
+        <button
+          type="button"
+          (click)="searchQuery.set('')"
+          class="absolute inset-y-0 right-0 flex items-center pr-2.5 text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+        >
+          <svg lucideX class="h-3.5 w-3.5"></svg>
+        </button>
+      }
+    </div>
+
+    <!-- Open Ticket Button -->
+    <button
+      type="button"
+      (click)="openCreateModal()"
+      class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 transition cursor-pointer"
+    >
+      <svg lucidePlus class="h-4 w-4"></svg>
+      <span>Open Ticket</span>
+    </button>
+  </div>
+</div>
+
+<!-- Status Filter Pills -->
+<div class="mb-6 flex flex-wrap items-center gap-2 border-b border-zinc-800/80 pb-3">
+  @for (st of statusFilters; track st) {
+    <button
+      type="button"
+      class="rounded-xl px-3.5 py-1.5 text-xs font-semibold transition cursor-pointer"
+      [class]="filterStatus() === st ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'"
+      (click)="filterStatus.set($any(st))"
+    >
+      {{ st === 'ALL' ? 'All Tickets' : (st | labelFormat) }}
+    </button>
+  }
+</div>
+
+<!-- Ticket Items List -->
+@if (loading() && filteredTickets().length === 0) {
+  <div class="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-12 text-center">
+    <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent"></span>
+    <p class="mt-2 text-xs text-zinc-400">Loading support tickets...</p>
+  </div>
+} @else if (filteredTickets().length === 0) {
+  <app-empty-state
+    title="No support tickets found"
+    detail="You don't have any support inquiries matching the current criteria. Click 'Open Ticket' to reach our team."
+  />
+} @else {
+  <div class="space-y-4">
+    @for (ticket of filteredTickets(); track ticket.id) {
+      <div class="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-5 transition hover:border-zinc-700/80">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/60 pb-3">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <app-badge [tone]="statusTone(ticket.status)">{{ ticket.status | labelFormat }}</app-badge>
+
+            <!-- Unread Badge Indicator -->
+            @if (ticket.unreadCount && ticket.unreadCount > 0) {
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-500/20 border border-rose-500/40 px-2.5 py-0.5 text-[11px] font-bold text-rose-300 shadow-sm shadow-rose-950 animate-pulse">
+                <span class="h-1.5 w-1.5 rounded-full bg-rose-400"></span>
+                <span>{{ ticket.unreadCount }} New</span>
+              </span>
+            }
+
+            <span class="text-xs font-mono text-zinc-500">Ticket #{{ ticket.id.substring(0, 8) }}</span>
+
+            @if (ticket.orderId) {
+              <span class="inline-flex items-center gap-1 rounded-md border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 text-[11px] font-mono text-indigo-300">
+                <svg lucideFileText class="h-3 w-3"></svg>
+                <span>Order: {{ ticket.orderId.substring(0, 8) }}</span>
+              </span>
+            }
+          </div>
+
+          <div class="flex items-center gap-1.5 text-xs text-zinc-500">
+            <svg lucideClock class="h-3.5 w-3.5 text-zinc-500"></svg>
+            <span>{{ ticket.createdAt | date: 'medium' }}</span>
+          </div>
+        </div>
+
+        <div class="pt-3">
+          <h3 class="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+            <svg lucideMessageSquare class="h-4 w-4 text-indigo-400 shrink-0"></svg>
+            <span>{{ ticket.subject }}</span>
+          </h3>
+          <p class="mt-2 text-xs text-zinc-300 whitespace-pre-line leading-relaxed bg-zinc-950/50 rounded-xl p-3 border border-zinc-800/60">
+            {{ ticket.body }}
+          </p>
+
+          <!-- Latest Reply Activity Preview Strip -->
+          @if (ticket.lastMessage; as lm) {
+            <div class="mt-2.5 rounded-xl border border-zinc-800/90 bg-zinc-950/80 px-3 py-2 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-inner">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">Latest Reply:</span>
+                <span
+                  class="rounded px-1.5 py-0.5 text-[9px] font-medium shrink-0 border"
+                  [class]="lm.senderRole === UserRoles.ADMIN || lm.senderRole === UserRoles.SUBADMIN
+                    ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                    : lm.senderRole === UserRoles.SUPPLIER
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                    : 'bg-zinc-800 text-zinc-300 border-zinc-700'"
+                >
+                  {{ lm.senderName }} ({{ lm.senderRole | labelFormat }})
+                </span>
+                <span class="text-zinc-200 truncate" [title]="lm.message">
+                  @if (lm.message && lm.message.trim().length > 0) {
+                    "{{ lm.message }}"
+                  } @else if (lm.attachmentsCount > 0) {
+                    📎 Shared {{ lm.attachmentsCount }} attachment(s)
+                  }
+                </span>
+              </div>
+
+              <span class="text-[10px] text-zinc-500 shrink-0 font-mono">
+                {{ lm.createdAt | date: 'shortTime' }}
+              </span>
+            </div>
+          }
+        </div>
+
+        <!-- Management Actions & Chat -->
+        <div class="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-800/60">
+          <button
+            type="button"
+            (click)="openTicketDetail(ticket)"
+            class="inline-flex items-center gap-2 rounded-xl bg-indigo-600/10 border border-indigo-500/30 px-3.5 py-1.5 text-xs font-semibold text-indigo-300 hover:bg-indigo-600/20 hover:border-indigo-500/50 transition cursor-pointer self-start sm:self-auto"
+          >
+            <svg lucideMessageSquare class="h-3.5 w-3.5"></svg>
+            <span>Live Discussion</span>
+            @if (ticket.totalMessages && ticket.totalMessages > 0) {
+              <span class="rounded-full bg-indigo-500/20 px-1.5 py-0.2 text-[10px] font-mono text-indigo-300 border border-indigo-500/30">
+                {{ ticket.totalMessages }}
+              </span>
+            }
+            @if (ticket.unreadCount && ticket.unreadCount > 0) {
+              <span class="rounded-full bg-rose-600 px-1.5 py-0.2 text-[10px] font-bold text-white shadow-sm shadow-rose-600/50">
+                +{{ ticket.unreadCount }}
+              </span>
+            }
+          </button>
+
+
+          <div class="flex items-center gap-2">
+            @if (canManageTickets()) {
+              @if (ticket.status === TicketStatuses.OPEN) {
+                <button
+                  type="button"
+                  class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-300 hover:bg-amber-500/20 transition cursor-pointer"
+                  (click)="updateTicketStatus(ticket.id, TicketStatuses.IN_REVIEW)"
+                >
+                  Mark In Review
+                </button>
+              }
+
+              @if (ticket.status !== TicketStatuses.RESOLVED && ticket.status !== TicketStatuses.CLOSED) {
+                <button
+                  type="button"
+                  class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300 hover:bg-emerald-500/20 transition cursor-pointer"
+                  (click)="updateTicketStatus(ticket.id, TicketStatuses.RESOLVED)"
+                >
+                  Mark Resolved
+                </button>
+              }
+
+              @if (ticket.status !== TicketStatuses.CLOSED) {
+                <button
+                  type="button"
+                  class="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-300 hover:text-white transition cursor-pointer"
+                  (click)="updateTicketStatus(ticket.id, TicketStatuses.CLOSED)"
+                >
+                  Close Ticket
+                </button>
+              }
+            } @else {
+              @if (ticket.status !== TicketStatuses.CLOSED && ticket.status !== TicketStatuses.RESOLVED) {
+                <button
+                  type="button"
+                  class="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1 text-xs text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+                  (click)="updateTicketStatus(ticket.id, TicketStatuses.CLOSED)"
+                >
+                  Cancel / Close
+                </button>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- Create Support Ticket Modal -->
+<app-modal [open]="modalOpen()" title="Open Support / Dispute Ticket" (closed)="modalOpen.set(false)">
+  <form [formGroup]="ticketForm" (ngSubmit)="submitTicket()" class="space-y-4">
+    <div>
+      <label class="block text-xs font-medium text-zinc-300 mb-1.5">Subject *</label>
+      <input
+        type="text"
+        formControlName="subject"
+        placeholder="e.g. Shipment delay, damaged item, inquiry..."
+        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+      />
+      @if (ticketForm.controls.subject.touched && ticketForm.controls.subject.invalid) {
+        <p class="mt-1 text-[11px] text-rose-400">Subject is required (min 3 characters).</p>
+      }
+    </div>
+
+    <div>
+      <label class="block text-xs font-medium text-zinc-300 mb-1.5">Related Order (Optional)</label>
+      <app-select
+        formControlName="orderId"
+        placeholder="None (General Inquiry / Question)"
+        [options]="orderOptions()"
+      />
+      @if (userOrders().length === 0) {
+        <p class="mt-1 text-[11px] text-zinc-500">No past orders found on your account.</p>
+      }
+    </div>
+
+    <!-- Selected Order Detailed Info Preview Box -->
+    @if (selectedOrder(); as ord) {
+      <div class="rounded-xl border border-indigo-500/30 bg-indigo-950/30 p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between border-b border-indigo-500/20 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-indigo-300">Order #{{ ord.id.substring(0, 8) }}</span>
+            <app-badge [tone]="statusTone(ord.status)">{{ ord.status | labelFormat }}</app-badge>
+          </div>
+          <span class="text-xs font-bold text-zinc-200">{{ ord.totalAmount | currency }}</span>
+        </div>
+
+        <div class="space-y-1.5 text-xs">
+          <p class="text-[11px] font-medium text-zinc-400">Order Items ({{ ord.items.length }}):</p>
+          <ul class="space-y-1 max-h-28 overflow-y-auto pr-1">
+            @for (item of ord.items; track item.id) {
+              <li class="flex items-center justify-between text-[11px] text-zinc-300 bg-zinc-900/80 px-2.5 py-1.5 rounded-lg border border-zinc-800/80">
+                <span class="truncate max-w-[200px] font-medium text-zinc-200">{{ item.productTitle }}</span>
+                <span class="text-zinc-400 shrink-0 ml-2 font-mono">Qty: {{ item.quantity }} × {{ item.unitPrice | currency }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <div class="flex items-center justify-between pt-1 text-[10px] text-zinc-500 border-t border-indigo-500/10">
+          <span>Date: {{ ord.createdAt | date: 'medium' }}</span>
+          <span class="font-mono text-[10px] text-zinc-500">ID: {{ ord.id }}</span>
+        </div>
+      </div>
+    }
+
+    <div>
+      <label class="block text-xs font-medium text-zinc-300 mb-1.5">Issue Description *</label>
+      <textarea
+        rows="4"
+        formControlName="body"
+        placeholder="Please provide details about your issue or question..."
+        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+      ></textarea>
+      @if (ticketForm.controls.body.touched && ticketForm.controls.body.invalid) {
+        <p class="mt-1 text-[11px] text-rose-400">Please provide detailed descriptions (min 5 characters).</p>
+      }
+    </div>
+
+    <div class="flex items-center justify-end gap-3 pt-2">
+      <button
+        type="button"
+        class="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-800 transition cursor-pointer"
+        (click)="modalOpen.set(false)"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        [disabled]="isSubmitting()"
+        class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2 text-xs font-semibold text-white hover:bg-indigo-500 transition cursor-pointer disabled:opacity-50"
+      >
+        @if (isSubmitting()) {
+          <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+          <span>Submitting...</span>
+        } @else {
+          <span>Submit Ticket</span>
+        }
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<!-- Real-Time Ticket Detail & Chat Modal -->
+<app-ticket-detail-modal
+  [open]="detailModalOpen()"
+  [ticket]="selectedTicket()"
+  [order]="ticketDetailOrder()"
+  (closed)="closeTicketDetail()"
+  (statusUpdated)="onDetailStatusUpdated($event)"
+/>
