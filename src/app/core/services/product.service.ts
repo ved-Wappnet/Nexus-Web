@@ -23,6 +23,37 @@ export type ProductUpsertPayload = {
   supplierId?: string;
 };
 
+export interface CompetitorPriceQuote {
+  platform: 'amazon' | 'flipkart';
+  platformName: string;
+  price: number;
+  currency: string;
+  rating: number;
+  reviewsCount: number;
+  deliveryDays: number;
+  inStock: boolean;
+  sellerName: string;
+  productUrl: string;
+  differenceAmount: number;
+  differencePercent: number;
+  isNexusCheaper: boolean;
+}
+
+export interface MarketPriceComparisonResponse {
+  productId: string;
+  productTitle: string;
+  nexusPrice: number;
+  currency: string;
+  bestCompetitorPrice: number;
+  averageCompetitorPrice: number;
+  maxSavingsAmount: number;
+  maxSavingsPercent: number;
+  priceMatchGuarantee: boolean;
+  competitors: CompetitorPriceQuote[];
+  lastUpdated: string;
+}
+
+
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private readonly http = inject(HttpClient);
@@ -94,6 +125,11 @@ export class ProductService {
   getSupplierTrustScore(supplierId: string) {
     return this.http.get<SupplierTrustScore>(`${this.api}/products/suppliers/${supplierId}/trust-score`);
   }
+
+  getMarketComparison(productId: string) {
+    return this.http.get<MarketPriceComparisonResponse>(`${this.api}/products/${productId}/market-comparison`);
+  }
+
 
   private toFormData(payload: ProductUpsertPayload, image?: File | null) {
     const form = new FormData();

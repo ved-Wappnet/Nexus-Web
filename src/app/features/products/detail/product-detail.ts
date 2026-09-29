@@ -41,13 +41,17 @@ import { LiveStockBadge } from '@shared/ui/live-stock-badge/live-stock-badge';
 import { StarRating } from '@shared/ui/star-rating/star-rating';
 import { ReviewModal } from './review-modal';
 import { Product360Studio } from './components/product-360-studio';
+import { MarketPriceComparisonComponent } from './components/market-price-comparison';
+
 
 @Component({
   selector: 'app-product-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     Product360Studio,
+    MarketPriceComparisonComponent,
     NexusCurrencyPipe,
+
     DatePipe,
     DecimalPipe,
     RouterLink,
