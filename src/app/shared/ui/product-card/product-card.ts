@@ -37,8 +37,8 @@ import { LiveStockBadge } from '@shared/ui/live-stock-badge/live-stock-badge';
     <div
       class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/70 shadow-lg shadow-black/20 transition-all duration-200 hover:-translate-y-1 hover:border-zinc-700 hover:shadow-2xl hover:shadow-black/50"
     >
-      <!-- Quick Price Alert Button (Top Left) - Non-Customer Only -->
-      @if (auth.role() && auth.role() !== UserRoles.CUSTOMER) {
+      <!-- Quick Price Alert Button (Top Left) -->
+      @if (!auth.role() || auth.role() === UserRoles.CUSTOMER) {
         <button
           type="button"
           class="absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition backdrop-blur-md shadow-md cursor-pointer select-none"

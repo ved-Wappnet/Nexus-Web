@@ -267,6 +267,18 @@ export class OrderService {
     }>(`${this.api}/orders/${orderId}/check-inspection-expiry`, {});
   }
 
+  simulateCourierGps(
+    orderId: string,
+    payload?: { latitude?: number; longitude?: number; speed?: number; heading?: number; stepPercent?: number },
+  ) {
+    return this.http.post<{
+      success: boolean;
+      orderId: string;
+      status: string;
+      telemetry: any;
+    }>(`${this.api}/orders/${orderId}/simulate-gps-ping`, payload || {});
+  }
+
   tickets(q?: string, status?: string) {
     const params: Record<string, string> = {};
     if (q) params['q'] = q;

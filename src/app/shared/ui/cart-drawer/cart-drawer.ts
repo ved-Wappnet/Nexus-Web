@@ -1,4 +1,6 @@
+import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { UserRoles } from '@core/models';
 import { AuthService } from '@core/services/auth.service';
@@ -9,19 +11,26 @@ import { NexusCurrencyPipe } from '@shared/pipes/nexus-currency.pipe';
 import {
   LucideArrowRight,
   LucideCreditCard,
+  LucideFileText,
   LucideMinus,
   LucidePlus,
   LucideShield,
   LucideShieldCheck,
   LucideShoppingBag,
+  LucideSparkles,
+  LucideTag,
   LucideTrash2,
   LucideX,
 } from '@lucide/angular';
+import { ProFormaQuoteService } from '@core/services/proforma-quote.service';
 
 @Component({
   selector: 'app-cart-drawer',
+  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CommonModule,
+    FormsModule,
     NexusCurrencyPipe,
     LucideShoppingBag,
     LucideX,
@@ -32,21 +41,40 @@ import {
     LucideShield,
     LucideShieldCheck,
     LucideCreditCard,
+    LucideTag,
+    LucideSparkles,
+    LucideFileText,
   ],
   templateUrl: './cart-drawer.html',
 })
 export class CartDrawer {
   readonly cart = inject(CartService);
   readonly auth = inject(AuthService);
+  readonly proformaService = inject(ProFormaQuoteService);
   readonly UserRoles = UserRoles;
   private readonly orderService = inject(OrderService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
   readonly isCheckingOut = signal(false);
+  readonly promoInput = signal('');
+
+  downloadProForma() {
+    this.proformaService.downloadCartProForma();
+  }
+
+  applyPromo() {
+    const val = this.promoInput().trim();
+    if (!val) return;
+    this.cart.applyCoupon(val, () => this.promoInput.set(''));
+  }
 
   getProductImage(product: any): string {
-    return product.images?.find((img: any) => img.isPrimary)?.url ?? product.images?.[0]?.url ?? '/brand/nexus-icon-64.png';
+    return (
+      product.images?.find((img: any) => img.isPrimary)?.url ??
+      product.images?.[0]?.url ??
+      '/brand/nexus-icon-64.png'
+    );
   }
 
   proceedToCheckout() {
@@ -72,7 +100,11 @@ export class CartDrawer {
       error: (err) => {
         this.isCheckingOut.set(false);
         const msg = err?.error?.message;
-        this.toast.error(typeof msg === 'string' ? msg : 'Unable to create order. Please verify stock.');
+        this.toast.error(
+          typeof msg === 'string'
+            ? msg
+            : 'Unable to create order. Please verify stock.',
+        );
       },
     });
   }

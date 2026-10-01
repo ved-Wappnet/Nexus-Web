@@ -19,6 +19,7 @@ import {
 import { OrderView } from '@core/models';
 import { OrderSocketService } from '@core/services/order-socket.service';
 import { ToastService } from '@core/services/toast.service';
+import { OrderService } from '@core/services/catalog.service';
 import {
   LucideCheckCircle2,
   LucideCheckCheck,
@@ -430,6 +431,18 @@ const CITY_DATABASE: Record<string, CityGeoConfig> = {
               <svg lucideCompass class="h-3 w-3" [class.animate-spin]="followDriver()"></svg>
               <span>Lock</span>
             </button>
+
+            <!-- Broadcast Live Backend GPS Ping Button -->
+            <button
+              type="button"
+              (click)="triggerBackendGpsPing()"
+              [disabled]="isPingingGps()"
+              title="Broadcast Live GPS Ping to Backend and all connected clients over WebSockets"
+              class="flex h-6 items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-950/60 hover:bg-cyan-900/60 px-2 text-[10px] font-bold text-cyan-300 transition cursor-pointer disabled:opacity-50 ml-1"
+            >
+              <svg lucideRadio class="h-3 w-3 text-cyan-400" [class.animate-pulse]="isPingingGps()"></svg>
+              <span>{{ isPingingGps() ? 'Pinging...' : 'GPS Ping' }}</span>
+            </button>
           </div>
         }
 
@@ -726,7 +739,9 @@ export class LiveDeliveryMapComponent implements OnInit, AfterViewInit, OnDestro
 
   private readonly toast = inject(ToastService);
   private readonly orderSocket = inject(OrderSocketService);
+  private readonly orderService = inject(OrderService);
   private readonly mapContainer = viewChild.required<ElementRef<HTMLDivElement>>('mapContainer');
+  readonly isPingingGps = signal(false);
 
   // SSR check & socket subscription
   constructor(@Inject(PLATFORM_ID) private readonly platformId: object) {
@@ -780,9 +795,13 @@ export class LiveDeliveryMapComponent implements OnInit, AfterViewInit, OnDestro
     const id = orderObj.id || 'NEXUS';
     const carrier = orderObj.carrier || '';
     
-    // First try carrier string
-    const match = carrier.match(/Nexus Fleet \(([^)]+)\)/i);
-    let assignedName = match ? match[1] : null;
+    // First try real assigned delivery partner from database
+    let assignedName = orderObj.deliveryPartnerName || null;
+
+    if (!assignedName) {
+      const match = carrier.match(/Nexus Fleet \(([^)]+)\)/i);
+      assignedName = match ? match[1] : null;
+    }
 
     // Fallback to tracking events description where admin assigned or partner accepted
     if (!assignedName && orderObj.trackingEvents) {
@@ -807,16 +826,16 @@ export class LiveDeliveryMapComponent implements OnInit, AfterViewInit, OnDestro
       'KA-05-FD-8832',
     ];
     const name = assignedName || 'Local Courier';
-    const plate = plates[hash % plates.length];
-    const rating = +(4.9 + ((hash % 2) * 0.05)).toFixed(2);
+    const plate = orderObj.deliveryPartnerPlate || plates[hash % plates.length];
+    const rating = orderObj.deliveryPartnerRating ? Number(orderObj.deliveryPartnerRating) : +(4.9 + ((hash % 2) * 0.05)).toFixed(2);
     const trips = 1000 + (hash % 1200);
 
     return {
       name,
-      phone: `+1 (555) ${100 + (hash % 899)}-${1000 + (hash % 8999)}`,
+      phone: orderObj.deliveryPartnerPhone || `+1 (555) ${100 + (hash % 899)}-${1000 + (hash % 8999)}`,
       rating,
       tripsCount: trips,
-      vehicleType: assignedName ? 'Verified E-Cargo Van' : 'Electric Express Cargo Van',
+      vehicleType: orderObj.deliveryPartnerVehicle || (assignedName ? 'Verified E-Cargo Van' : 'Electric Express Cargo Van'),
       vehiclePlate: plate,
       avatarUrl: '',
     };
@@ -1082,6 +1101,14 @@ export class LiveDeliveryMapComponent implements OnInit, AfterViewInit, OnDestro
       this.isLiveBeaconActive.set(false);
       this.updateMapState(1);
     } else {
+      if (this.order().driverLatitude && this.order().driverLongitude) {
+        this.handleLiveDriverBeacon(
+          Number(this.order().driverLatitude),
+          Number(this.order().driverLongitude),
+          this.order().driverHeading || 0,
+          this.order().driverSpeed || 42,
+        );
+      }
       // Start movement loop
       this.startAnimation();
     }
@@ -1352,6 +1379,32 @@ export class LiveDeliveryMapComponent implements OnInit, AfterViewInit, OnDestro
     if (this.followDriver() && this.vehicleMarker) {
       this.map.panTo(this.vehicleMarker.getLatLng(), { animate: true });
     }
+  }
+
+  triggerBackendGpsPing(): void {
+    const ord = this.order();
+    if (!ord) return;
+    this.isPingingGps.set(true);
+
+    const stepPct = Math.round(this.progress() * 100) || 75;
+    this.orderService.simulateCourierGps(ord.id, { stepPercent: stepPct }).subscribe({
+      next: (res: any) => {
+        this.isPingingGps.set(false);
+        this.toast.success(
+          `📡 Satellite GPS Ping Broadcasted: ${res.telemetry.partnerName} (${res.telemetry.speed} km/h, ${res.telemetry.remainingKm} km away)`
+        );
+        this.handleLiveDriverBeacon(
+          res.telemetry.latitude,
+          res.telemetry.longitude,
+          res.telemetry.heading,
+          res.telemetry.speed
+        );
+      },
+      error: (err: any) => {
+        this.isPingingGps.set(false);
+        this.toast.error(err?.error?.message || 'Failed to broadcast GPS ping');
+      },
+    });
   }
 
   callCourier(): void {

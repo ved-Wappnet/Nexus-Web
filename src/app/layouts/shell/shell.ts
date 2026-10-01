@@ -11,8 +11,10 @@ import { PriceAlertService } from '@core/services/price-alert.service';
 import { RfqService } from '@core/services/rfq.service';
 import { RfqChatService } from '@core/services/rfq-chat.service';
 import { TicketChatService } from '@core/services/ticket-chat.service';
+import { VisualSearchService } from '@core/services/visual-search.service';
 import {
   LucideBell,
+  LucideCamera,
   LucideChevronRight,
   LucideFileText,
   LucideFolderTree,
@@ -40,7 +42,6 @@ import { CompareDock } from '@shared/ui/compare-dock/compare-dock';
 import { CompareMatrixModal } from '@shared/ui/compare-matrix-modal/compare-matrix-modal';
 import { CurrencySelectorComponent } from '@shared/ui/currency-selector/currency-selector';
 import { NotificationPanelComponent } from '@shared/ui/notification-panel/notification-panel';
-import { PriceAlertModal } from '@shared/ui/price-alert-modal/price-alert-modal';
 import { RfqModal } from '@shared/ui/rfq-modal/rfq-modal';
 import { OrderSocketService } from '@core/services/order-socket.service';
 import { AudioTelemetryService } from '@core/services/audio-telemetry.service';
@@ -56,6 +57,7 @@ import { AudioTelemetryService } from '@core/services/audio-telemetry.service';
     CurrencySelectorComponent,
     NotificationPanelComponent,
     LucideBell,
+    LucideCamera,
     LucideMenu,
     LucideChevronRight,
     LucideLogOut,
@@ -78,7 +80,6 @@ import { AudioTelemetryService } from '@core/services/audio-telemetry.service';
     LucideRadar,
     CompareDock,
     CompareMatrixModal,
-    PriceAlertModal,
     RfqModal,
   ],
   templateUrl: './shell.html',
@@ -93,6 +94,7 @@ export class Shell {
   readonly ticketChat = inject(TicketChatService);
   readonly orderSocket = inject(OrderSocketService);
   readonly audioTelemetry = inject(AudioTelemetryService);
+  readonly visualSearch = inject(VisualSearchService);
   private readonly router = inject(Router);
 
 

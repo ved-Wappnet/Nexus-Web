@@ -54,35 +54,33 @@ export interface CampaignAnalyticsItem {
       <div class="pointer-events-none absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-emerald-600/10 blur-3xl"></div>
 
       <!-- Header Section -->
-      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800/80 pb-6">
-        <div>
-          <div class="flex items-center gap-2.5">
-            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400">
-              <svg lucideSparkles class="h-5 w-5"></svg>
-            </span>
-            <div>
-              <div class="flex items-center gap-2">
-                <h2 class="text-lg font-bold tracking-tight text-zinc-100">AI Campaign Analytics & Intelligence</h2>
-                <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
-                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                  Autopilot Active
-                </span>
-              </div>
-              <p class="text-xs text-zinc-400 mt-0.5">
-                Real-time tracking of AI-driven Wishlist & Cart Abandonment recovery campaigns, pixel open telemetry & conversion attribution.
-              </p>
+      <div class="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-zinc-800/80 pb-6">
+        <div class="flex items-center gap-3">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400">
+            <svg lucideSparkles class="h-5 w-5"></svg>
+          </span>
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="text-lg font-bold tracking-tight text-zinc-100">AI Campaign Analytics & Intelligence</h2>
+              <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                Autopilot Active
+              </span>
             </div>
+            <p class="text-xs text-zinc-400 mt-0.5">
+              Real-time tracking of AI-driven Wishlist & Cart Abandonment recovery campaigns, pixel open telemetry & conversion attribution.
+            </p>
           </div>
         </div>
 
         <!-- Action Controls -->
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-2 shrink-0">
           <!-- Refresh button -->
           <button
             type="button"
             (click)="triggerRefresh()"
             [disabled]="isRefreshing()"
-            class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700/80 transition cursor-pointer disabled:opacity-50"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700/80 bg-zinc-800/80 px-3.5 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white transition cursor-pointer disabled:opacity-50"
             title="Refresh analytics data"
           >
             <svg lucideRotateCcw class="h-3.5 w-3.5" [class.animate-spin]="isRefreshing()"></svg>
@@ -94,13 +92,13 @@ export interface CampaignAnalyticsItem {
             type="button"
             (click)="triggerCampaign('wishlist')"
             [disabled]="triggeringWishlist()"
-            class="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-600/20 transition cursor-pointer disabled:opacity-50"
+            class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-600/20 transition cursor-pointer disabled:opacity-50"
           >
             @if (triggeringWishlist()) {
               <span class="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
               <span>Deploying AI...</span>
             } @else {
-              <svg lucideHeart class="h-3.5 w-3.5"></svg>
+              <svg lucideHeart class="h-3.5 w-3.5 text-indigo-200"></svg>
               <span>Run Wishlist AI</span>
             }
           </button>
@@ -110,13 +108,13 @@ export interface CampaignAnalyticsItem {
             type="button"
             (click)="triggerCampaign('abandonment')"
             [disabled]="triggeringAbandonment()"
-            class="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-amber-600/20 transition cursor-pointer disabled:opacity-50"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700/80 bg-zinc-800/90 hover:bg-zinc-700 px-3.5 py-2 text-xs font-semibold text-zinc-100 transition cursor-pointer disabled:opacity-50"
           >
             @if (triggeringAbandonment()) {
-              <span class="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <span class="h-3.5 w-3.5 border-2 border-zinc-300 border-t-transparent rounded-full animate-spin"></span>
               <span>Scanning Carts...</span>
             } @else {
-              <svg lucideShoppingCart class="h-3.5 w-3.5"></svg>
+              <svg lucideShoppingCart class="h-3.5 w-3.5 text-zinc-300"></svg>
               <span>Run Cart Recovery</span>
             }
           </button>
@@ -341,7 +339,7 @@ export interface CampaignAnalyticsItem {
                     <button
                       type="button"
                       (click)="triggerCampaign(item.campaign_type === 'WISHLIST' ? 'wishlist' : 'abandonment')"
-                      class="inline-flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/80 px-2.5 py-1 text-[11px] font-medium text-zinc-200 hover:bg-zinc-700 transition cursor-pointer"
+                      class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/80 bg-zinc-800/80 px-2.5 py-1 text-[11px] font-medium text-zinc-200 hover:bg-zinc-700 hover:text-white transition cursor-pointer"
                     >
                       <svg lucidePlay class="h-3 w-3 text-indigo-400"></svg>
                       <span>Trigger</span>
@@ -368,29 +366,64 @@ export interface CampaignAnalyticsItem {
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
+            <!-- Campaign switcher -->
+            <div class="flex items-center rounded-lg border border-zinc-800 bg-zinc-900/90 p-0.5 text-[11px] font-medium text-zinc-400">
+              <button
+                type="button"
+                (click)="selectedSimCampaign.set('CART_ABANDONMENT')"
+                [class.bg-zinc-800]="selectedSimCampaign() === 'CART_ABANDONMENT'"
+                [class.text-zinc-100]="selectedSimCampaign() === 'CART_ABANDONMENT'"
+                class="rounded-md px-2.5 py-1 transition cursor-pointer"
+              >
+                Cart Recovery
+              </button>
+              <button
+                type="button"
+                (click)="selectedSimCampaign.set('WISHLIST')"
+                [class.bg-zinc-800]="selectedSimCampaign() === 'WISHLIST'"
+                [class.text-zinc-100]="selectedSimCampaign() === 'WISHLIST'"
+                class="rounded-md px-2.5 py-1 transition cursor-pointer"
+              >
+                Wishlist Promo
+              </button>
+            </div>
+
+            <!-- Simulation buttons -->
             <button
               type="button"
-              (click)="simulate('CART_ABANDONMENT', 'open')"
+              (click)="simulate(selectedSimCampaign(), 'send')"
               [disabled]="simulating() !== null"
-              class="rounded-lg border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[11px] font-semibold text-sky-300 hover:bg-sky-500/20 transition cursor-pointer disabled:opacity-50"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/80 bg-zinc-800/80 px-2.5 py-1 text-[11px] font-medium text-zinc-200 hover:bg-zinc-700 hover:text-white transition cursor-pointer disabled:opacity-50"
             >
-              + Simulate Open
+              <span class="h-1.5 w-1.5 rounded-full bg-indigo-400"></span>
+              <span>+ Send (+1)</span>
             </button>
             <button
               type="button"
-              (click)="simulate('CART_ABANDONMENT', 'click')"
+              (click)="simulate(selectedSimCampaign(), 'open')"
               [disabled]="simulating() !== null"
-              class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-300 hover:bg-amber-500/20 transition cursor-pointer disabled:opacity-50"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/80 bg-zinc-800/80 px-2.5 py-1 text-[11px] font-medium text-zinc-200 hover:bg-zinc-700 hover:text-white transition cursor-pointer disabled:opacity-50"
             >
-              + Simulate Click
+              <span class="h-1.5 w-1.5 rounded-full bg-sky-400"></span>
+              <span>+ Open (+1)</span>
             </button>
             <button
               type="button"
-              (click)="simulate('CART_ABANDONMENT', 'conversion', 189.50)"
+              (click)="simulate(selectedSimCampaign(), 'click')"
               [disabled]="simulating() !== null"
-              class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-500/20 transition cursor-pointer disabled:opacity-50"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/80 bg-zinc-800/80 px-2.5 py-1 text-[11px] font-medium text-zinc-200 hover:bg-zinc-700 hover:text-white transition cursor-pointer disabled:opacity-50"
             >
-              + Simulate Conversion ($189.50)
+              <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+              <span>+ Click (+1)</span>
+            </button>
+            <button
+              type="button"
+              (click)="simulate(selectedSimCampaign(), 'conversion', 149.99)"
+              [disabled]="simulating() !== null"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300 hover:bg-emerald-500/20 transition cursor-pointer disabled:opacity-50"
+            >
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+              <span>+ Convert ($149.99)</span>
             </button>
           </div>
         </div>
@@ -409,6 +442,7 @@ export class CampaignAnalyticsCard {
   readonly triggeringAbandonment = signal(false);
   readonly isRefreshing = signal(false);
   readonly simulating = signal<string | null>(null);
+  readonly selectedSimCampaign = signal<'CART_ABANDONMENT' | 'WISHLIST'>('CART_ABANDONMENT');
 
   readonly items = computed<CampaignAnalyticsItem[]>(() => {
     const raw = this.analyticsData() || [];
@@ -523,7 +557,7 @@ export class CampaignAnalyticsCard {
     }
   }
 
-  async simulate(type: string, action: 'open' | 'click' | 'conversion', amount?: number) {
+  async simulate(type: string, action: 'send' | 'open' | 'click' | 'conversion', amount?: number) {
     this.simulating.set(`${type}-${action}`);
     try {
       const token = this.auth.accessToken();

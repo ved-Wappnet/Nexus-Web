@@ -9,7 +9,9 @@ import { CatalogService } from '@core/services/catalog.service';
 import { ProductService } from '@core/services/product.service';
 import { PriceAlertService } from '@core/services/price-alert.service';
 import { ToastService } from '@core/services/toast.service';
+import { VisualSearchService } from '@core/services/visual-search.service';
 import {
+  LucideCamera,
   LucideCheck,
   LucideDollarSign,
   LucideHeart,
@@ -39,6 +41,7 @@ import { ForexVolatilityBadge } from '@shared/ui/forex-volatility-badge/forex-vo
     ProductCard,
     Loader,
     LucideSearch,
+    LucideCamera,
     LucideSlidersHorizontal,
     LucideRotateCcw,
     LucideX,
@@ -55,6 +58,7 @@ export class ProductCatalog {
   private readonly catalog = inject(CatalogService);
   private readonly toast = inject(ToastService);
   private readonly priceAlert = inject(PriceAlertService);
+  readonly visualSearch = inject(VisualSearchService);
   readonly auth = inject(AuthService);
   readonly UserRoles = UserRoles;
 

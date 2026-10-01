@@ -36,7 +36,14 @@ import {
   LucideSparkles,
   LucideTruck,
   LucideUser,
+  LucideTag,
+  LucideFileText,
+  LucideGlobe,
 } from '@lucide/angular';
+import { FormsModule } from '@angular/forms';
+import { CartService } from '@core/services/cart.service';
+import { ProFormaQuoteService } from '@core/services/proforma-quote.service';
+import { LandedCostService } from '@core/services/landed-cost.service';
 
 @Component({
   selector: 'app-checkout-page',
@@ -45,6 +52,7 @@ import {
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     RouterLink,
     NexusCurrencyPipe,
     Select,
@@ -66,6 +74,9 @@ import {
     LucideReceipt,
     LucideTruck,
     LucideCheck,
+    LucideTag,
+    LucideFileText,
+    LucideGlobe,
   ],
   templateUrl: './checkout.html',
 })
@@ -77,6 +88,53 @@ export class CheckoutPage implements OnInit {
   private readonly paymentService = inject(PaymentService);
   private readonly toast = inject(ToastService);
   readonly auth = inject(AuthService);
+  readonly cart = inject(CartService);
+  readonly proformaService = inject(ProFormaQuoteService);
+  readonly landedCostService = inject(LandedCostService);
+  readonly isDownloadingProForma = signal(false);
+
+  openLandedCostEstimate() {
+    const o = this.order();
+    const c = this.selectedCountry();
+    const destCode = c?.code || 'DE';
+
+    if (o && o.items && o.items.length > 0) {
+      const firstItem = o.items[0];
+      this.landedCostService.openDrawer(
+        {
+          id: firstItem.productId,
+          title: firstItem.productTitle || 'Wholesale Goods',
+          price: Number(firstItem.unitPrice || o.totalAmount),
+          categoryName: 'Electronics',
+          stockQuantity: 9999,
+        } as any,
+        firstItem.quantity || 1,
+        destCode,
+      );
+    } else if (this.cart.items().length > 0) {
+      const first = this.cart.items()[0];
+      this.landedCostService.openDrawer(
+        first.product,
+        first.quantity,
+        destCode,
+      );
+    } else {
+      this.landedCostService.openDrawer(
+        {
+          id: 'b2b-cart-consignment',
+          title: 'Wholesale B2B Consignment',
+          price: this.totalAmount() || 1000,
+          categoryName: 'Electronics',
+          stockQuantity: 9999,
+        } as any,
+        1,
+        destCode,
+      );
+    }
+  }
+
+  readonly promoInput = signal<string>('');
+  readonly isRecoveredCart = signal<boolean>(false);
 
   readonly supportedCountries = SUPPORTED_COUNTRIES;
   readonly selectedCountry = signal<CountryLocation>(SUPPORTED_COUNTRIES[0]);
@@ -200,7 +258,31 @@ export class CheckoutPage implements OnInit {
       : 0,
   );
 
+  readonly discountAmount = computed(() => {
+    if (!this.cart.hasDiscount()) return 0;
+    const base = this.chargeAmount();
+    return Math.round(base * (this.cart.discountPercent() / 100) * 100) / 100;
+  });
+
+  readonly finalPayableAmount = computed(() => {
+    return Math.max(0, Math.round((this.chargeAmount() - this.discountAmount()) * 100) / 100);
+  });
+
+  applyPromo() {
+    const val = this.promoInput().trim();
+    if (!val) return;
+    this.cart.applyCoupon(val, () => this.promoInput.set(''));
+  }
+
   ngOnInit() {
+    this.route.queryParamMap.subscribe((qp) => {
+      const coupon = qp.get('coupon');
+      if (coupon) {
+        this.cart.applyCoupon(coupon);
+        this.isRecoveredCart.set(true);
+      }
+    });
+
     this.route.paramMap.subscribe((params) => {
       const id = params.get('orderId');
       if (id) {
@@ -722,6 +804,26 @@ export class CheckoutPage implements OnInit {
           this.toast.error(msg);
         },
       });
+  }
+
+  downloadProFormaInvoice() {
+    const oId = this.orderId();
+    if (!oId) {
+      this.toast.error('No active order reference found.');
+      return;
+    }
+    this.isDownloadingProForma.set(true);
+    this.toast.info('Generating official B2B Pro-Forma Invoice with price lock...');
+    this.proformaService.generatePdfFromOrder(oId).subscribe({
+      next: (blob) => {
+        this.isDownloadingProForma.set(false);
+        this.proformaService.saveBlobAsPdf(blob, `nexus-proforma-order-${oId.slice(0, 8)}.pdf`);
+      },
+      error: () => {
+        this.isDownloadingProForma.set(false);
+        this.toast.error('Failed to generate Pro-Forma Invoice for this order.');
+      },
+    });
   }
 
   payViaStripeHosted() {

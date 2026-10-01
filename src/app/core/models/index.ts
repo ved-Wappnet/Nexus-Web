@@ -200,6 +200,12 @@ export interface Order {
   driverHeading?: number | null;
   driverSpeed?: number | null;
   driverLastPingAt?: string | null;
+  arrivalAlertSentAt?: string | null;
+  deliveryPartnerName?: string | null;
+  deliveryPartnerPhone?: string | null;
+  deliveryPartnerVehicle?: string | null;
+  deliveryPartnerPlate?: string | null;
+  deliveryPartnerRating?: number | null;
   recipientName?: string | null;
   recipientPhone?: string | null;
   billingSameAsShipping?: boolean;

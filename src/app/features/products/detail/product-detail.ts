@@ -33,7 +33,9 @@ import {
   LucideTrendingDown,
   LucideTruck,
   LucideBell,
+  LucideGlobe,
 } from '@lucide/angular';
+import { LandedCostService } from '@core/services/landed-cost.service';
 import { Badge } from '@shared/ui/badge/badge';
 import { Loader } from '@shared/ui/loader/loader';
 import { LabelFormatPipe } from '@shared/pipes/label-format.pipe';
@@ -43,7 +45,7 @@ import { StarRating } from '@shared/ui/star-rating/star-rating';
 import { ReviewModal } from './review-modal';
 import { Product360Studio } from './components/product-360-studio';
 import { MarketPriceComparisonComponent } from './components/market-price-comparison';
-import { PriceAlertModal } from '@shared/ui/price-alert-modal/price-alert-modal';
+import { WholesaleTierPricingComponent, computeWholesaleTierUnitPrice } from '@shared/ui/wholesale-tier-pricing/wholesale-tier-pricing';
 
 
 @Component({
@@ -81,8 +83,9 @@ import { PriceAlertModal } from '@shared/ui/price-alert-modal/price-alert-modal'
     LucideSparkles,
     StarRating,
     ReviewModal,
-    PriceAlertModal,
     LucideBell,
+    WholesaleTierPricingComponent,
+    LucideGlobe,
   ],
   templateUrl: './product-detail.html',
 })
@@ -99,6 +102,7 @@ export class ProductDetail {
   readonly compare = inject(CompareService);
   readonly priceAlert = inject(PriceAlertService);
   readonly rfqService = inject(RfqService);
+  readonly landedCostService = inject(LandedCostService);
   readonly auth = inject(AuthService);
   readonly UserRoles = UserRoles;
   readonly ProductStatuses = ProductStatuses;
@@ -112,6 +116,12 @@ export class ProductDetail {
   }
 
   readonly isAlertModalOpen = signal(false);
+
+  openLandedCostDrawer() {
+    const prod = this.product();
+    if (!prod) return;
+    this.landedCostService.openDrawer(prod, this.quantity());
+  }
 
   readonly product = signal<ProductView | null>(null);
   readonly missing = signal(false);
@@ -158,10 +168,22 @@ export class ProductDetail {
     );
   });
 
-  readonly lineTotal = computed(() => {
+  readonly effectiveUnitPrice = computed(() => {
     const p = this.product();
     if (!p) return 0;
-    return p.price * this.quantity();
+    const customTiers = (p.attributes as any)?.tierPricing;
+    return computeWholesaleTierUnitPrice(p.price, this.quantity(), customTiers);
+  });
+
+  readonly lineTotal = computed(() => {
+    return this.effectiveUnitPrice() * this.quantity();
+  });
+
+  readonly totalSavings = computed(() => {
+    const p = this.product();
+    if (!p) return 0;
+    const regular = p.price * this.quantity();
+    return Math.max(0, Math.round((regular - this.lineTotal()) * 100) / 100);
   });
 
   readonly displayImage = computed(() => {

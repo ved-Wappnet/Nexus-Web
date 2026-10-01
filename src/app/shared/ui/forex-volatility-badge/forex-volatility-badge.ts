@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { CurrencyService, CurrencyVolatility } from '@core/services/currency.service';
 import { ToastService } from '@core/services/toast.service';
+import { DecimalPipe } from '@angular/common';
 import {
   LucideInfo,
   LucideLock,
@@ -24,6 +25,7 @@ import {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DecimalPipe,
     LucideTrendingUp,
     LucideTrendingDown,
     LucideLock,
@@ -56,7 +58,7 @@ import {
 
         <!-- Currency Pair & Rate -->
         <span class="font-mono text-zinc-300">
-          {{ currentCode() }}/USD {{ currentRate() }}
+          {{ currentCode() }}/USD {{ currentRate() | number: '1.2-2' }}
         </span>
 
         <!-- Percentage Delta Badge -->
@@ -142,14 +144,14 @@ import {
             <div class="flex items-center justify-between gap-3 text-zinc-400">
               <span class="text-zinc-400 shrink-0 font-medium">Live Market Rate:</span>
               <span class="font-mono font-bold text-zinc-100 text-right whitespace-nowrap">
-                1 USD = {{ currentRate() }} {{ currentCode() }}
+                1 USD = {{ currentRate() | number: '1.2-2' }} {{ currentCode() }}
               </span>
             </div>
 
             <div class="flex items-center justify-between gap-3 text-zinc-400">
               <span class="text-zinc-400 shrink-0 font-medium">24h Benchmark:</span>
               <span class="font-mono text-zinc-300 text-right whitespace-nowrap">
-                1 USD = {{ volatility().prev24h }} {{ currentCode() }}
+                1 USD = {{ volatility().prev24h | number: '1.2-2' }} {{ currentCode() }}
               </span>
             </div>
 
@@ -274,7 +276,7 @@ export class ForexVolatilityBadge {
     const key = this.lockKey();
     const lock = this.currencyService.lockRate(key, this.quoteId());
     this.toast.success(
-      `Exchange rate locked at 1 USD = ${lock.lockedRate} ${lock.currencyCode} for 24 hours!`,
+      `Exchange rate locked at 1 USD = ${lock.lockedRate.toFixed(2)} ${lock.currencyCode} for 24 hours!`,
     );
   }
 

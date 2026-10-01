@@ -304,7 +304,7 @@ export class CurrencyService {
       list.map((c) => {
         const liveRate = rates[c.code];
         if (liveRate && typeof liveRate === 'number' && liveRate > 0) {
-          return { ...c, rate: Number(liveRate.toFixed(4)) };
+          return { ...c, rate: Number(liveRate.toFixed(2)) };
         }
         return c;
       }),
@@ -330,7 +330,7 @@ export class CurrencyService {
         return SUPPORTED_CURRENCIES.map((c) => {
           const liveRate = rates[c.code];
           if (liveRate && typeof liveRate === 'number' && liveRate > 0) {
-            return { ...c, rate: Number(liveRate.toFixed(4)) };
+            return { ...c, rate: Number(liveRate.toFixed(2)) };
           }
           return c;
         });

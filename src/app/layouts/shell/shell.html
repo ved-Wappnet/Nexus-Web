@@ -157,6 +157,17 @@
       </div>
 
       <div class="flex items-center gap-3">
+        <!-- AI Visual Image Search Quick Trigger -->
+        <button
+          type="button"
+          (click)="visualSearch.open()"
+          class="relative flex h-9 items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-3 text-zinc-300 transition hover:border-indigo-500/50 hover:text-white cursor-pointer"
+          title="Search Wholesale Catalog by Photo / Screenshot"
+        >
+          <svg lucideCamera class="h-4 w-4 text-indigo-400"></svg>
+          <span class="hidden sm:inline text-xs font-semibold">Visual Search</span>
+        </button>
+
         <!-- Multi-Currency Switcher -->
         <app-currency-selector />
 
@@ -304,7 +315,6 @@
     @if (auth.role() !== UserRoles.DELIVERY_PARTNER) {
       <app-compare-dock />
       <app-compare-matrix-modal />
-      <app-price-alert-modal />
       <app-rfq-modal />
     }
 
