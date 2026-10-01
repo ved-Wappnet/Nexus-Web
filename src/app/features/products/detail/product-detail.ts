@@ -32,6 +32,7 @@ import {
   LucideThumbsUp,
   LucideTrendingDown,
   LucideTruck,
+  LucideBell,
 } from '@lucide/angular';
 import { Badge } from '@shared/ui/badge/badge';
 import { Loader } from '@shared/ui/loader/loader';
@@ -42,6 +43,7 @@ import { StarRating } from '@shared/ui/star-rating/star-rating';
 import { ReviewModal } from './review-modal';
 import { Product360Studio } from './components/product-360-studio';
 import { MarketPriceComparisonComponent } from './components/market-price-comparison';
+import { PriceAlertModal } from '@shared/ui/price-alert-modal/price-alert-modal';
 
 
 @Component({
@@ -62,7 +64,6 @@ import { MarketPriceComparisonComponent } from './components/market-price-compar
     LucideHeart,
     LucideColumns3,
     LucideCheck,
-    LucideTrendingDown,
     LucideBuilding2,
     LiveStockBadge,
     LucideCreditCard,
@@ -80,6 +81,8 @@ import { MarketPriceComparisonComponent } from './components/market-price-compar
     LucideSparkles,
     StarRating,
     ReviewModal,
+    PriceAlertModal,
+    LucideBell,
   ],
   templateUrl: './product-detail.html',
 })

@@ -1,14 +1,14 @@
 import { Component, input, signal, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { ProductService, MarketPriceComparisonResponse } from '@core/services/product.service';
+import { PriceAlertService } from '@core/services/price-alert.service';
 import {
   LucideTrendingDown,
   LucideShieldCheck,
   LucideExternalLink,
   LucideSparkles,
   LucideCheckCircle2,
-  LucideLayers,
-  LucideClock,
+  LucideBell,
 } from '@lucide/angular';
 
 @Component({
@@ -23,6 +23,7 @@ import {
     LucideExternalLink,
     LucideSparkles,
     LucideCheckCircle2,
+    LucideBell,
   ],
   template: `
     @if (comparison(); as data) {
@@ -49,13 +50,30 @@ import {
             </div>
           </div>
 
-          <!-- Savings Pill Badge -->
-          @if (data.maxSavingsAmount > 0) {
-            <div class="flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-950/40 px-3 py-1.5 shadow-sm">
-              <svg lucideSparkles class="h-4 w-4 text-emerald-400"></svg>
-              <span class="text-xs font-extrabold text-emerald-300">Save up to {{ data.maxSavingsAmount | currency }} ({{ data.maxSavingsPercent }}%)</span>
-            </div>
-          }
+          <!-- Actions & Savings -->
+          <div class="flex flex-wrap items-center gap-2">
+            @if (data.maxSavingsAmount > 0) {
+              <div class="flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-950/40 px-3 py-1.5 shadow-sm">
+                <svg lucideSparkles class="h-4 w-4 text-emerald-400"></svg>
+                <span class="text-xs font-extrabold text-emerald-300">Save up to {{ data.maxSavingsAmount | currency }} ({{ data.maxSavingsPercent }}%)</span>
+              </div>
+            }
+
+            <button
+              type="button"
+              (click)="onTrackPriceClick()"
+              class="flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition cursor-pointer shadow-sm"
+              [class]="
+                priceAlertService.hasAlert(data.productId)
+                  ? 'border-emerald-500/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/40'
+                  : 'border-indigo-500/40 bg-indigo-600/25 text-indigo-300 hover:bg-indigo-600/40 hover:text-white'
+              "
+              title="Track price drop for this product"
+            >
+              <svg lucideBell class="h-3.5 w-3.5" [class.text-emerald-400]="priceAlertService.hasAlert(data.productId)" [class.text-indigo-400]="!priceAlertService.hasAlert(data.productId)"></svg>
+              <span>{{ priceAlertService.hasAlert(data.productId) ? 'Watch Active' : 'Set Alert' }}</span>
+            </button>
+          </div>
         </div>
 
         <!-- Comparison Grid -->
@@ -146,13 +164,35 @@ import {
 })
 export class MarketPriceComparisonComponent implements OnInit {
   private readonly productService = inject(ProductService);
+  readonly priceAlertService = inject(PriceAlertService);
 
   readonly productId = input.required<string>();
+  readonly product = input<any | null>(null);
   readonly comparison = signal<MarketPriceComparisonResponse | null>(null);
   readonly isLoading = signal<boolean>(false);
 
   ngOnInit() {
     this.fetchComparison();
+  }
+
+  onTrackPriceClick() {
+    const p = this.product();
+    if (p) {
+      this.priceAlertService.openModal(p);
+      return;
+    }
+    const comp = this.comparison();
+    if (comp) {
+      this.priceAlertService.openModal({
+        id: comp.productId,
+        title: comp.productTitle,
+        price: comp.nexusPrice,
+        images: [],
+        slug: '',
+        storeName: 'Nexus Direct',
+        stockQuantity: 10,
+      } as any);
+    }
   }
 
   fetchComparison() {

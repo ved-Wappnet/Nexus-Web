@@ -53,6 +53,45 @@ export interface MarketPriceComparisonResponse {
   lastUpdated: string;
 }
 
+export type PriceAlertType = 'ANY_DROP' | 'BELOW_TARGET' | 'COMPETITOR_BEAT';
+
+export interface CreatePriceAlertPayload {
+  email: string;
+  alertType?: PriceAlertType;
+  targetPrice?: number;
+  competitorMarginPercent?: number;
+}
+
+export interface PriceAlertStatusResponse {
+  isWatching: boolean;
+  alert: {
+    id: string;
+    productId: string;
+    email: string;
+    alertType: PriceAlertType;
+    initialPrice: number;
+    targetPrice: number | null;
+    competitorMarginPercent: number;
+    isActive: boolean;
+  } | null;
+}
+
+export interface UserPriceAlertItem {
+  id: string;
+  productId: string;
+  productTitle: string;
+  productSlug: string;
+  productImage: string | null;
+  currentPrice: number;
+  initialPrice: number;
+  targetPrice: number | null;
+  alertType: PriceAlertType;
+  competitorMarginPercent: number;
+  triggerCount: number;
+  lastTriggeredAt: string | null;
+  createdAt: string;
+}
+
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
@@ -128,6 +167,30 @@ export class ProductService {
 
   getMarketComparison(productId: string) {
     return this.http.get<MarketPriceComparisonResponse>(`${this.api}/products/${productId}/market-comparison`);
+  }
+
+  createPriceAlert(productId: string, payload: CreatePriceAlertPayload) {
+    return this.http.post<any>(`${this.api}/products/${productId}/price-alerts`, payload);
+  }
+
+  getPriceAlertStatus(productId: string, email?: string) {
+    let params = new HttpParams();
+    if (email) params = params.set('email', email);
+    return this.http.get<PriceAlertStatusResponse>(`${this.api}/products/${productId}/price-alerts/status`, { params });
+  }
+
+  getMyPriceAlerts() {
+    return this.http.get<UserPriceAlertItem[]>(`${this.api}/products/price-alerts/my-alerts`);
+  }
+
+  cancelPriceAlert(alertId: string, email?: string) {
+    let params = new HttpParams();
+    if (email) params = params.set('email', email);
+    return this.http.delete<{ success: boolean }>(`${this.api}/products/price-alerts/${alertId}`, { params });
+  }
+
+  simulatePriceDrop(productId: string, newPrice: number) {
+    return this.http.post<any[]>(`${this.api}/products/${productId}/simulate-price-drop`, { newPrice });
   }
 
 

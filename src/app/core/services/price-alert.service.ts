@@ -1,8 +1,16 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { ProductView } from '@core/models';
 import { ToastService } from './toast.service';
+import { AuthService } from './auth.service';
+import {
+  CreatePriceAlertPayload,
+  PriceAlertType,
+  ProductService,
+  UserPriceAlertItem,
+} from './product.service';
 
 export interface PriceAlertItem {
+  id?: string;
   productId: string;
   productTitle: string;
   productSlug: string;
@@ -11,8 +19,11 @@ export interface PriceAlertItem {
   initialPrice: number;
   targetPrice: number;
   currentPrice: number;
+  alertType?: PriceAlertType;
+  competitorMarginPercent?: number;
   createdAt: string;
   isTriggered: boolean;
+  email?: string;
 }
 
 const LOCAL_STORAGE_KEY = 'nexus_price_alerts_v1';
@@ -20,11 +31,55 @@ const LOCAL_STORAGE_KEY = 'nexus_price_alerts_v1';
 @Injectable({ providedIn: 'root' })
 export class PriceAlertService {
   private readonly toast = inject(ToastService);
+  private readonly productService = inject(ProductService);
+  private readonly auth = inject(AuthService);
+
   readonly activeModalProduct = signal<ProductView | null>(null);
   readonly alerts = signal<PriceAlertItem[]>(this.loadStorage());
+  readonly isSaving = signal<boolean>(false);
 
   readonly activeCount = computed(() => this.alerts().length);
-  readonly triggeredCount = computed(() => this.alerts().filter((a) => a.currentPrice <= a.targetPrice).length);
+  readonly triggeredCount = computed(
+    () =>
+      this.alerts().filter(
+        (a) => a.targetPrice !== null && a.currentPrice <= a.targetPrice,
+      ).length,
+  );
+
+  constructor() {
+    // If user is authenticated, attempt to fetch backend alerts
+    if (this.auth.isAuthenticated()) {
+      this.fetchUserAlerts();
+    }
+  }
+
+  fetchUserAlerts() {
+    this.productService.getMyPriceAlerts().subscribe({
+      next: (serverAlerts) => {
+        if (serverAlerts && serverAlerts.length > 0) {
+          const mapped: PriceAlertItem[] = serverAlerts.map((sa) => ({
+            id: sa.id,
+            productId: sa.productId,
+            productTitle: sa.productTitle,
+            productSlug: sa.productSlug,
+            productImage: sa.productImage || undefined,
+            storeName: 'Nexus Direct',
+            initialPrice: sa.initialPrice,
+            targetPrice: sa.targetPrice ?? sa.initialPrice,
+            currentPrice: sa.currentPrice,
+            alertType: sa.alertType,
+            competitorMarginPercent: sa.competitorMarginPercent,
+            createdAt: sa.createdAt,
+            isTriggered: sa.targetPrice !== null && sa.currentPrice <= sa.targetPrice,
+          }));
+          this.saveStorage(mapped);
+        }
+      },
+      error: () => {
+        // Fallback silently to localStorage
+      },
+    });
+  }
 
   openModal(product: ProductView) {
     this.activeModalProduct.set(product);
@@ -53,34 +108,110 @@ export class PriceAlertService {
     }
   }
 
-  setAlert(product: ProductView, targetPrice: number): PriceAlertItem {
-    const existing = this.alerts();
-    const primaryImg = product.images.find((i) => i.isPrimary)?.url ?? product.images[0]?.url;
+  setAlert(
+    product: ProductView,
+    payload: {
+      email: string;
+      alertType: PriceAlertType;
+      targetPrice?: number;
+      competitorMarginPercent?: number;
+    },
+    onSuccess?: () => void,
+  ) {
+    this.isSaving.set(true);
 
-    const newItem: PriceAlertItem = {
-      productId: product.id,
-      productTitle: product.title,
-      productSlug: product.slug,
-      productImage: primaryImg,
-      storeName: product.storeName,
-      initialPrice: product.price,
-      targetPrice: Math.round(targetPrice * 100) / 100,
-      currentPrice: product.price,
-      createdAt: new Date().toISOString(),
-      isTriggered: product.price <= targetPrice,
-    };
+    const primaryImg =
+      product.images.find((i) => i.isPrimary)?.url ?? product.images[0]?.url;
 
-    const updated = existing.filter((a) => a.productId !== product.id);
-    updated.push(newItem);
-    this.saveStorage(updated);
+    // Send to backend API
+    this.productService
+      .createPriceAlert(product.id, {
+        email: payload.email,
+        alertType: payload.alertType,
+        targetPrice: payload.targetPrice,
+        competitorMarginPercent: payload.competitorMarginPercent,
+      })
+      .subscribe({
+        next: (savedServer) => {
+          this.isSaving.set(false);
 
-    this.toast.success(
-      `Price drop alert set for ${product.title} at $${newItem.targetPrice.toLocaleString()}!`
-    );
-    return newItem;
+          const newItem: PriceAlertItem = {
+            id: savedServer.id,
+            productId: product.id,
+            productTitle: product.title,
+            productSlug: product.slug,
+            productImage: primaryImg,
+            storeName: product.storeName || 'Nexus Direct',
+            initialPrice: product.price,
+            targetPrice: payload.targetPrice ?? product.price,
+            currentPrice: product.price,
+            alertType: payload.alertType,
+            competitorMarginPercent: payload.competitorMarginPercent ?? 10,
+            email: payload.email,
+            createdAt: new Date().toISOString(),
+            isTriggered: payload.targetPrice ? product.price <= payload.targetPrice : false,
+          };
+
+          const existing = this.alerts();
+          const updated = existing.filter((a) => a.productId !== product.id);
+          updated.push(newItem);
+          this.saveStorage(updated);
+
+          const alertTypeDesc =
+            payload.alertType === 'BELOW_TARGET'
+              ? `below $${payload.targetPrice}`
+              : payload.alertType === 'COMPETITOR_BEAT'
+              ? `when beating Amazon/Flipkart by ${payload.competitorMarginPercent}%`
+              : 'on any price drop';
+
+          this.toast.success(
+            `Price watch active for "${product.title}" (${alertTypeDesc})! Notification will be sent to ${payload.email}.`,
+          );
+
+          if (onSuccess) onSuccess();
+        },
+        error: (err) => {
+          this.isSaving.set(false);
+          // Fallback to local storage if offline
+          const newItem: PriceAlertItem = {
+            productId: product.id,
+            productTitle: product.title,
+            productSlug: product.slug,
+            productImage: primaryImg,
+            storeName: product.storeName || 'Nexus Direct',
+            initialPrice: product.price,
+            targetPrice: payload.targetPrice ?? product.price,
+            currentPrice: product.price,
+            alertType: payload.alertType,
+            competitorMarginPercent: payload.competitorMarginPercent ?? 10,
+            email: payload.email,
+            createdAt: new Date().toISOString(),
+            isTriggered: payload.targetPrice ? product.price <= payload.targetPrice : false,
+          };
+
+          const existing = this.alerts();
+          const updated = existing.filter((a) => a.productId !== product.id);
+          updated.push(newItem);
+          this.saveStorage(updated);
+
+          this.toast.success(`Price watch alert saved locally for ${product.title}!`);
+          if (onSuccess) onSuccess();
+        },
+      });
   }
 
   removeAlert(productId: string) {
+    const existing = this.getAlert(productId);
+    const alertId = existing?.id;
+    const email = existing?.email || this.auth.currentUser()?.email;
+
+    if (alertId) {
+      this.productService.cancelPriceAlert(alertId, email).subscribe({
+        next: () => {},
+        error: () => {},
+      });
+    }
+
     const updated = this.alerts().filter((a) => a.productId !== productId);
     this.saveStorage(updated);
     this.toast.success('Price alert removed from watchlist');
@@ -102,17 +233,18 @@ export class PriceAlertService {
       const idx = currentAlerts.findIndex((a) => a.productId === p.id);
       if (idx !== -1) {
         const item = currentAlerts[idx];
+        const isTriggered = item.targetPrice !== null && p.price <= item.targetPrice;
         const updatedItem = {
           ...item,
           currentPrice: p.price,
-          isTriggered: p.price <= item.targetPrice,
+          isTriggered,
         };
         currentAlerts[idx] = updatedItem;
 
-        if (p.price <= item.targetPrice && !item.isTriggered) {
+        if (isTriggered && !item.isTriggered) {
           triggeredAny = true;
           this.toast.success(
-            `🔥 PRICE DROP ALERT! ${p.title} is now $${p.price} (Target: $${item.targetPrice})!`
+            `🔥 PRICE DROP ALERT! ${p.title} is now $${p.price} (Target: $${item.targetPrice})!`,
           );
         }
       }

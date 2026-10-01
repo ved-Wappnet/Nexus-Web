@@ -234,24 +234,28 @@
             </div>
           }
 
-          <!-- Watch Price Button for Vendor / Supplier Roles -->
-          @if (auth.role() && auth.role() !== UserRoles.CUSTOMER) {
-            <div class="flex items-center gap-3 pt-2">
-              <button
-                type="button"
-                class="inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold transition cursor-pointer"
-                [class]="
-                  priceAlert.hasAlert(p.id)
-                    ? 'border-indigo-500/50 bg-indigo-600/20 text-indigo-300'
-                    : 'border-zinc-700 text-zinc-200 hover:border-zinc-600 hover:bg-zinc-900'
-                "
-                (click)="priceAlert.openModal(p)"
-              >
-                <svg lucideTrendingDown class="h-4 w-4 text-indigo-400"></svg>
-                <span>{{ priceAlert.hasAlert(p.id) ? 'Watching Price' : 'Watch Price Drops' }}</span>
-              </button>
-            </div>
-          }
+          <!-- Watch Price Drop Button -->
+          <div class="flex items-center gap-3 pt-2">
+            <button
+              type="button"
+              class="w-full inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-bold transition cursor-pointer shadow-sm"
+              [class]="
+                priceAlert.hasAlert(p.id)
+                  ? 'border-emerald-500/40 bg-emerald-950/30 text-emerald-300 hover:bg-emerald-900/40'
+                  : 'border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800 hover:text-white'
+              "
+              (click)="priceAlert.openModal(p)"
+            >
+              @if (priceAlert.hasAlert(p.id)) {
+                <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <svg lucideBell class="h-4 w-4 text-emerald-400"></svg>
+                <span>Price Watch Active (Click to Manage)</span>
+              } @else {
+                <svg lucideBell class="h-4 w-4 text-indigo-400"></svg>
+                <span>Track Price Drop & Beat Competitors</span>
+              }
+            </button>
+          </div>
         </div>
       </div>
 
@@ -346,7 +350,7 @@
   </div>
 
   <!-- Live External Market Price Comparison (Nexus vs Amazon vs Flipkart) -->
-  <app-market-price-comparison [productId]="p.id" />
+  <app-market-price-comparison [productId]="p.id" [product]="p" />
 
   <!-- Interactive 360° Product Studio with "X-Ray" Spec Hotspots (Dedicated 3D Model Section) -->
   <app-product-360-studio [product]="p" />
@@ -674,4 +678,7 @@
     (saved)="onReviewSaved($event)"
   />
 }
+
+<!-- Price Alert Watchlist Modal -->
+<app-price-alert-modal />
 
